@@ -80,21 +80,28 @@ struct fragCount
 
 struct rasterize 
 {
-	thrust::device_vector<thrust::tuple<int,int,char,char,char>> *frag;
+	thrust::device_vector<thrust::tuple<int,int,float,char,char,char>> *frag;
 	__host__ __device__
-	rasterize(thrust::device_vector<thrust::tuple<int,int,char,char,char>> *_frag) : frag(_frag) {}
+	rasterize(thrust::device_vector<thrust::tuple<int,int,float,char,char,char>> *_frag) : frag(_frag) {}
 
 	template <typename Tuple>
 	__host__ __device__
 	void operator()(Tuple t)
 	{
-		float x1, y1, x2, y2, x3, y3;
+		float x1, y1, z1, x2, y2, z2, x3, y3, z3;
 		x1 = thrust::get<0>(thrust::get<0>(t));
 		y1 = thrust::get<1>(thrust::get<0>(t));
+		z1 = thrust::get<2>(thrust::get<0>(t));
 		x2 = thrust::get<0>(thrust::get<1>(t));
 		y2 = thrust::get<1>(thrust::get<1>(t));
+		z2 = thrust::get<2>(thrust::get<1>(t));
 		x3 = thrust::get<0>(thrust::get<2>(t));
 		y3 = thrust::get<1>(thrust::get<2>(t));
+		z3 = thrust::get<2>(thrust::get<2>(t));
+		//calculate triangle plane
+		float x_coe = ((y2-y1)*(z3-z1)-(y3-y1)*(z2-z1));
+		float y_coe = ((x2-x1)*(z3-z1)-(x3-x1)*(z2-z1));
+		float z_coe = ((x2-x1)*(y3-y1)-(x3-x1)*(y2-y1));
 		float minY = y1 < y2 ? y1 : (y2 < y3 ? y2 : y3);
 		float maxY = y1 > y2 ? y1 : (y2 > y3 ? y2 : y3);
 		int low = ceil(minY);
@@ -150,7 +157,10 @@ struct rasterize
 
 			int end = floor(end2), start = ceil(end1);
 			for(int j = start; j <= end; j++)
-				(*frag)[count++] = thrust::make_tuple(j, i, r, g, b);
+			{
+				float k = z1 - (x_coe*(j-x1)+y_coe*(i-y1))/z_coe;
+				(*frag)[count++] = thrust::make_tuple(j, i, k, r, g, b);
+			}
 		}
 	}
 };
@@ -189,7 +199,7 @@ int main()
 	
 	std::cout << "Number of fragments: " << fragments << std::endl;
 
-	thrust::device_vector<thrust::tuple<int,int,char,char,char>> frag_pos(fragments);
+	thrust::device_vector<thrust::tuple<int,int,float,char,char,char>> frag_pos(fragments);
 
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(),
 				       			     	      p2.begin(),
@@ -205,9 +215,10 @@ int main()
 
 	for(int i = 0; i < fragments; i++)
 	{
-		thrust::tuple<int,int,char,char,char> test = frag_pos[i];
-		std::cout<<i+1<<":"<<thrust::get<0>(test)<<","<<thrust::get<1>(test)<<std::endl;
-		std::cout<<i+1<<":"<<(int)thrust::get<2>(test)<<","<<
-			(int)thrust::get<3>(test)<<","<<(int)thrust::get<4>(test)<<std::endl;
+		thrust::tuple<int,int,float,char,char,char> test = frag_pos[i];
+		std::cout<<i+1<<":"<<thrust::get<0>(test)<<","<<
+			thrust::get<1>(test)<<","<<thrust::get<2>(test)<<"\t\t";
+		std::cout<<(int)thrust::get<3>(test)<<","<<
+			(int)thrust::get<4>(test)<<","<<(int)thrust::get<5>(test)<<std::endl;
 	}
 }
