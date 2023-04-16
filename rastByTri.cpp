@@ -82,16 +82,17 @@ struct fragCount
 
 struct testFunc
 {
+	thrust::device_vector<int> *v;
+	__host__ __device__
+	testFunc(thrust::device_vector<int> *v)
+		: v(v) {}
+	
 	template <typename Tuple>
 	__host__ __device__
 	void operator()(Tuple t)
 	{
 		int size = thrust::get<0>(t);
-		for(int i = 0; i <= size; i++)
-		{
-			std::cout << thrust::get<1>(t)[i] << ", ";
-		}
-		std::cout << std::endl;
+		(*v)[size]++;	
 	}
 };
 
@@ -125,9 +126,13 @@ int main()
 
 	thrust::device_vector<int> test(10);
 	thrust::sequence(test.begin(), test.end());
-	thrust::constant_iterator<thrust::device_vector<int>> const_test(test);
+	thrust::device_vector<int> size(4);
+	thrust::sequence(size.begin(), size.end());
 
-	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(test.begin(), const_test)),
-			 thrust::make_zip_iterator(thrust::make_tuple(test.end(), const_test)),
-			 testFunc());
+	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(size.begin())),
+			 thrust::make_zip_iterator(thrust::make_tuple(size.end())),
+			 testFunc(&test));
+	for(int i = 0; i < 10; i++)
+		std::cout << test[i] << ", ";
+	std::cout << std::endl;
 }
