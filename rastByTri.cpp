@@ -3,8 +3,10 @@
 
 #include <thrust/device_vector.h>
 #include <thrust/iterator/zip_iterator.h>
+#include <thrust/iterator/constant_iterator.h>
 #include <thrust/for_each.h>
 #include <thrust/pair.h>
+#include <thrust/sequence.h>
 
 struct fragCount
 {
@@ -78,6 +80,22 @@ struct fragCount
 	}
 };
 
+struct testFunc
+{
+	template <typename Tuple>
+	__host__ __device__
+	void operator()(Tuple t)
+	{
+		int size = thrust::get<0>(t);
+		for(int i = 0; i <= size; i++)
+		{
+			std::cout << thrust::get<1>(t)[i] << ", ";
+		}
+		std::cout << std::endl;
+	}
+};
+
+
 int main()
 {
 	thrust::device_vector<thrust::tuple<float, float, float>> p1(2);
@@ -104,4 +122,12 @@ int main()
 
 	int fragments = thrust::reduce(frags.begin(), frags.end());
 	std::cout << "Number of fragments: " << fragments << std::endl;
+
+	thrust::device_vector<int> test(10);
+	thrust::sequence(test.begin(), test.end());
+	thrust::constant_iterator<thrust::device_vector<int>> const_test(test);
+
+	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(test.begin(), const_test)),
+			 thrust::make_zip_iterator(thrust::make_tuple(test.end(), const_test)),
+			 testFunc());
 }
