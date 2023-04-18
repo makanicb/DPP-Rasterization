@@ -12,6 +12,10 @@
 #include <thrust/scatter.h>
 #include <thrust/scan.h>
 #include <thrust/functional.h>
+#include <thrust/copy.h>
+#include <thrust/gather.h>
+#include <thrust/reduce.h>
+#include <thrust/sort.h>
 
 struct fragCount
 {
@@ -85,10 +89,6 @@ struct fragCount
 
 struct rasterize 
 {
-	thrust::device_vector<thrust::tuple<int,int,float,char,char,char>> *frag;
-	__host__ __device__
-	rasterize(thrust::device_vector<thrust::tuple<int,int,float,char,char,char>> *_frag) : frag(_frag) {}
-
 	template <typename Tuple>
 	__host__ __device__
 	void operator()(Tuple t)
@@ -108,65 +108,50 @@ struct rasterize
 		float y_coe = ((x2-x1)*(z3-z1)-(x3-x1)*(z2-z1));
 		float z_coe = ((x2-x1)*(y3-y1)-(x3-x1)*(y2-y1));
 		float minY = y1 < y2 ? y1 : (y2 < y3 ? y2 : y3);
-		float maxY = y1 > y2 ? y1 : (y2 > y3 ? y2 : y3);
-		int low = ceil(minY);
-		int high = floor(maxY);
-		int count = thrust::get<3>(t);
-		char r = thrust::get<0>(thrust::get<4>(t));
-		char g = thrust::get<1>(thrust::get<4>(t));
-		char b = thrust::get<2>(thrust::get<4>(t));
-		for(int i = low; i <= high; i++)
+		int y = ceil(minY) + thrust::get<3>(t);
+		float ed1, ed2, ed3;
+		bool e1 = false, e2 = false, e3 = false;
+		if(y1 < y2 && y >= y1 && y <= y2 || y1 > y2 && y >= y2 && y <= y1) 
 		{
-			float ed1, ed2, ed3;
-			bool e1 = false, e2 = false, e3 = false;
-			if(y1 < y2 && i >= y1 && i <= y2 || y1 > y2 && i >= y2 && i <= y1) 
-			{
-				ed1 = (i - y1) * (x2-x1) / (y2-y1) + x1;
-				e1 = true;
-			}
-			if(y2 < y3 && i >= y2 && i <= y3 || y2 > y3 && i >= y3 && i <= y2) 
-			{
-				ed2 = (i - y2) * (x3-x2) / (y3-y2) + x2;
-				e2 = true;
-			}
-			if(y1 < y3 && i >= y1 && i <= y3 || y1 > y3 && i >= y3 && i <= y1) 
-			{
-				ed2 = (i - y1) * (x3-x1) / (y3-y1) + x1;
-				ed3 = true;
-			}
-
-			float end1, end2;
-			
-			if(e1 && e2 && e3)
-			{
-				float eq = ed1 == ed2 ? ed1 : ed3;
-				float neq = ed1 == ed2 ? ed3 : ed1;
-				end1 = eq < neq ? eq : neq;
-				end2 = eq < neq ? neq : eq;
-			}
-			else if (e1 && e2)
-			{
-				end1 = ed1 < ed2 ? ed1 : ed2;
-				end2 = ed1 < ed2 ? ed2 : ed1;
-			}
-			else if(e2 && e3)
-			{
-				end1 = ed2 < ed3 ? ed2 : ed3;
-				end2 = ed2 < ed3 ? ed3 : ed2;
-			}
-			else if(e1 && e3)
-			{
-				end1 = ed1 < ed3 ? ed1 : ed3;
-				end2 = ed1 < ed3 ? ed3 : ed1;
-			}
-
-			int end = floor(end2), start = ceil(end1);
-			for(int j = start; j <= end; j++)
-			{
-				float k = z1 - (x_coe*(j-x1)+y_coe*(i-y1))/z_coe;
-				(*frag)[count++] = thrust::make_tuple(j, i, k, r, g, b);
-			}
+			ed1 = (y - y1) * (x2-x1) / (y2-y1) + x1;
+			e1 = true;
 		}
+		if(y2 < y3 && y >= y2 && y <= y3 || y2 > y3 && y >= y3 && y <= y2) 
+		{
+			ed2 = (y - y2) * (x3-x2) / (y3-y2) + x2;
+			e2 = true;
+		}
+		if(y1 < y3 && y >= y1 && y <= y3 || y1 > y3 && y >= y3 && y <= y1) 
+		{
+			ed2 = (y - y1) * (x3-x1) / (y3-y1) + x1;
+			ed3 = true;
+		}
+
+		float end1;
+		
+		if(e1 && e2 && e3)
+		{
+			float eq = ed1 == ed2 ? ed1 : ed3;
+			float neq = ed1 == ed2 ? ed3 : ed1;
+			end1 = eq < neq ? eq : neq;
+		}
+		else if (e1 && e2)
+		{
+			end1 = ed1 < ed2 ? ed1 : ed2;
+		}
+		else if(e2 && e3)
+		{
+			end1 = ed2 < ed3 ? ed2 : ed3;
+		}
+		else if(e1 && e3)
+		{
+			end1 = ed1 < ed3 ? ed1 : ed3;
+		}
+
+		int x = ceil(end1) + thrust::get<4>(t);
+		float z = z1 - (x_coe*(x-x1)+y_coe*(y1-y))/z_coe;
+		thrust::get<5>(t)  = thrust::pair(x, y);
+		thrust::get<6>(t) = z;
 	}
 };
 
@@ -291,6 +276,36 @@ void print_int_vec(thrust::device_vector<int>::iterator start,
 	std::cout << std::endl;
 }
 
+void print_pair_vec(thrust::device_vector<thrust::pair<int,int>>::iterator start,
+		    thrust::device_vector<thrust::pair<int,int>>::iterator end)
+{
+	for(; start < end; start++)
+	{
+		thrust::pair<int,int> temp = *start;
+		std::cout << temp.first << "," << temp.second << "\t";
+	}
+	std::cout << std::endl;
+}
+
+void print_float_vec(thrust::device_vector<float>::iterator start,
+		     thrust::device_vector<float>::iterator end)
+{
+	for(; start < end; start++)
+		std::cout << *start << " ";
+	std::cout << std::endl;
+}
+/*
+struct key_equality
+{
+	__host__ __device__	
+	bool operator()
+		(thrust::pair<thrust::pair<int,int>, int> p1, thrust::pair<thrust::pair<int,int>, int> p2)
+	{
+		return thrust::get<0>(thrust::get<0>(p1)) == thrust::get<0>(thrust::get<0>(p2)) &&
+		       thrust::get<1>(thrust::get<0>(p1)) == thrust::get<1>(thrust::get<0>(p2));
+	}
+};
+*/
 int main()
 {
 	thrust::device_vector<thrust::tuple<float, float, float>> p1(2);
@@ -301,9 +316,9 @@ int main()
 	p1[0] = thrust::make_tuple(0,0,0);
 	p2[0] = thrust::make_tuple(5,5,0);
 	p3[0] = thrust::make_tuple(10,0,0);
-	p1[1] = thrust::make_tuple(0,0,0);
-	p2[1] = thrust::make_tuple(5,5,0);
-	p3[1] = thrust::make_tuple(10,0,0);
+	p1[1] = thrust::make_tuple(0,0,-1);
+	p2[1] = thrust::make_tuple(5,5,-1);
+	p3[1] = thrust::make_tuple(10,0,-1);
 
 	color[0] = thrust::make_tuple(255,0,0);
 	color[1] = thrust::make_tuple(0,0,255);
@@ -382,25 +397,23 @@ int main()
 
 	index_int(tri_ptr.begin(), row_off.begin(), row_ptr.begin(), num_rows);
 
-	for(int i = 0; i < num_rows; i++)
-		std::cout << row_ptr[i] << " ";
-	std::cout << std::endl;	
+	print_int_vec(row_ptr.begin(), row_ptr.end());
 
 	thrust::device_vector<int> col_count(num_rows);
 
 	thrust::for_each
-		(thrust::make_zip_iterator
+		(thrust::make_zip_iterator(thrust::make_tuple
 		 	(thrust::make_permutation_iterator(p1.begin(), tri_ptr.begin()),
 			 thrust::make_permutation_iterator(p2.begin(), tri_ptr.begin()),
 			 thrust::make_permutation_iterator(p3.begin(), tri_ptr.begin()),
 			 row_ptr.begin(),
-			 col_count.begin()),
-		thrust::make_zip_iterator
+			 col_count.begin())),
+		thrust::make_zip_iterator(thrust::make_tuple
 		 	(thrust::make_permutation_iterator(p1.begin(), tri_ptr.end()),
 			 thrust::make_permutation_iterator(p2.begin(), tri_ptr.end()),
 			 thrust::make_permutation_iterator(p3.begin(), tri_ptr.end()),
 			 row_ptr.end(),
-			 col_count.end()),
+			 col_count.end())),
 		colCount());
 
 	print_int_vec(col_count.begin(), col_count.end());
@@ -430,6 +443,50 @@ int main()
 	print_int_vec(frag_row.begin(), frag_row.end());
 	print_int_vec(frag_col.begin(), frag_col.end());
 
+	thrust::device_vector<thrust::pair<int,int>> pos(fragments);
+	thrust::device_vector<float> depth(fragments);
 
+	thrust::for_each(
+		thrust::make_zip_iterator(
+			thrust::make_tuple(
+				thrust::make_permutation_iterator(p1.begin(), frag_tri.begin()),
+				thrust::make_permutation_iterator(p2.begin(), frag_tri.begin()),
+				thrust::make_permutation_iterator(p3.begin(), frag_tri.begin()),
+				frag_row.begin(), frag_col.begin(), pos.begin(), depth.begin())),
+		thrust::make_zip_iterator(
+			thrust::make_tuple(
+				thrust::make_permutation_iterator(p1.begin(), frag_tri.end()),
+				thrust::make_permutation_iterator(p2.begin(), frag_tri.end()),
+				thrust::make_permutation_iterator(p3.begin(), frag_tri.end()),
+				frag_row.end(), frag_col.end(), pos.end(), depth.end())),
+		rasterize());
 
+	print_pair_vec(pos.begin(), pos.end());
+	print_float_vec(depth.begin(), depth.end());
+
+	thrust::device_vector<thrust::tuple<char,char,char>> frag_colors(fragments);
+	thrust::gather(frag_tri.begin(), frag_tri.end(), color.begin(), frag_colors.begin());
+/*
+	thrust::device_vector<thrust::pair<int,int>> cpos(fragments);
+	thrust::device_vector<float> cdepth(fragments);
+	thrust::device_vector<int> frag_indices(fragments);
+	thrust::sequence(frag_indices.begin(), frag_indices.end());
+
+	thrust::copy(pos.begin(), pos.end(), cpos.begin());
+
+	thrust::device_vector<thrust::pair<int,int>> true_fragments(fragments);
+	thrust::device_vector<float> min_depth(fragments);
+
+	thrust::sort_by_key(cpos.begin(), cpos.end(), frag_indices.begin(), thrust::greater<thrust::pair<int,int>>());
+	thrust::gather(frag_indices.begin(), frag_indices.end(), depth.begin(), cdepth.begin());
+
+	print_pair_vec(cpos.begin(), cpos.end());
+	print_int_vec(frag_indices.begin(), frag_indices.end());
+	print_float_vec(cdepth.begin(), cdepth.end());
+	thrust::reduce_by_key(cpos.begin(), cpos.end(), cdepth.begin(), true_fragments.begin(), 
+			min_depth.begin(), key_equality(), thrust::maximum<float>());
+
+	print_pair_vec(true_fragments.begin(), true_fragments.end());
+	print_float_vec(min_depth.begin(), min_depth.end());
+*/
 }
