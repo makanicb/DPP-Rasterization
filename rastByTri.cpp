@@ -324,10 +324,11 @@ int main()
 	int fragments = write_index[1] + frags[1];
 	
 	std::cout << "Number of fragments: " << fragments << std::endl;
-	/*
 
-	thrust::device_vector<int> frag_pos(fragments);
-
+	thrust::device_vector<int> frag_tri(fragments);
+	expand_int(write_index.begin(), frags.begin(), frag_tri.begin(), frag_tri.end(), 2);
+	print_int_vec(frag_tri.begin(), frag_tri.end());
+/*
 	thrust::scatter_if
 		(thrust::counting_iterator<int>(0),
 		 thrust::counting_iterator<int>(2),
@@ -350,7 +351,7 @@ int main()
 			 			   frag_pos.begin()),
 		 frag_ind.begin(),
 		 thrust::minus<int>());
-		 */
+*/
 	
 	thrust::device_vector<int> rows(2);
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), rows.begin())),
@@ -403,5 +404,32 @@ int main()
 		colCount());
 
 	print_int_vec(col_count.begin(), col_count.end());
+
+	thrust::device_vector<int> col_off(num_rows);
+
+	thrust::exclusive_scan(col_count.begin(), col_count.end(), col_off.begin());
+
+	print_int_vec(col_off.begin(), col_off.end());
+
+	thrust::device_vector<int> frag_row(fragments);
+
+	expand_int(col_off.begin(), col_count.begin(), frag_row.begin(), frag_row.end(), num_rows);
+
+	thrust::device_vector<int> frag_col(fragments);
+
+	expand_int(col_off.begin(), col_count.begin(), frag_col.begin(), frag_col.end(), num_rows);
+	index_int(frag_col.begin(), col_off.begin(), frag_col.begin(), fragments);
+
+	thrust::transform
+		(frag_row.begin(),
+		 frag_row.end(),
+		 thrust::make_permutation_iterator(row_off.begin(), frag_tri.begin()),
+		 frag_row.begin(),
+		 thrust::minus<int>());
+
+	print_int_vec(frag_row.begin(), frag_row.end());
+	print_int_vec(frag_col.begin(), frag_col.end());
+
+
 
 }
