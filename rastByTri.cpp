@@ -366,8 +366,7 @@ int main()
 			 			   frag_pos.begin()),
 		 frag_ind.begin(),
 		 thrust::minus<int>());
-*/
-	
+*/	
 	thrust::device_vector<int> rows(2);
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), rows.begin())),
 			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), rows.end())),
@@ -466,7 +465,7 @@ int main()
 
 	thrust::device_vector<thrust::tuple<char,char,char>> frag_colors(fragments);
 	thrust::gather(frag_tri.begin(), frag_tri.end(), color.begin(), frag_colors.begin());
-/*
+	
 	thrust::device_vector<thrust::pair<int,int>> cpos(fragments);
 	thrust::device_vector<float> cdepth(fragments);
 	thrust::device_vector<int> frag_indices(fragments);
@@ -484,9 +483,8 @@ int main()
 	print_int_vec(frag_indices.begin(), frag_indices.end());
 	print_float_vec(cdepth.begin(), cdepth.end());
 	thrust::reduce_by_key(cpos.begin(), cpos.end(), cdepth.begin(), true_fragments.begin(), 
-			min_depth.begin(), key_equality(), thrust::maximum<float>());
+			min_depth.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::maximum<float>());
 
 	print_pair_vec(true_fragments.begin(), true_fragments.end());
 	print_float_vec(min_depth.begin(), min_depth.end());
-*/
 }
