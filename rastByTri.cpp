@@ -16,6 +16,7 @@
 #include <thrust/gather.h>
 #include <thrust/reduce.h>
 #include <thrust/sort.h>
+#include <thrust/unique.h>
 
 struct fragCount
 {
@@ -306,6 +307,24 @@ struct key_equality
 	}
 };
 */
+
+struct findPositions
+{
+	thrust::device_vector<thrust::pair<int,int>>::iterator start;
+	thrust::device_vector<thrust::pair<int,int>>::iterator stop;
+	findPositions
+		(thrust::device_vector<thrust::pair<int,int>>::iterator _start, thrust::device_vector<thrust::pair<int,int>>::iterator _stop)
+		: start(_start), stop(_stop) {}
+
+	template <typename Tuple>
+	__host__ __device__
+	void operator()(Tuple t)
+	{
+		thrust::pair<int,int> pos = thrust::get<0>(t);
+		thrust::get<1>(t) = (int)(thrust::find(start, stop, pos) - start);
+	}
+};
+
 int main()
 {
 	thrust::device_vector<thrust::tuple<float, float, float>> p1(2);
@@ -460,6 +479,7 @@ int main()
 				frag_row.end(), frag_col.end(), pos.end(), depth.end())),
 		rasterize());
 
+	std::cout << "Position and depth of fragments" << std::endl;
 	print_pair_vec(pos.begin(), pos.end());
 	print_float_vec(depth.begin(), depth.end());
 
@@ -468,23 +488,45 @@ int main()
 	
 	thrust::device_vector<thrust::pair<int,int>> cpos(fragments);
 	thrust::device_vector<float> cdepth(fragments);
-	thrust::device_vector<int> frag_indices(fragments);
-	thrust::sequence(frag_indices.begin(), frag_indices.end());
 
 	thrust::copy(pos.begin(), pos.end(), cpos.begin());
+	thrust::copy(depth.begin(), depth.end(), cdepth.begin());
 
 	thrust::device_vector<thrust::pair<int,int>> true_fragments(fragments);
 	thrust::device_vector<float> min_depth(fragments);
 
-	thrust::sort_by_key(cpos.begin(), cpos.end(), frag_indices.begin(), thrust::greater<thrust::pair<int,int>>());
-	thrust::gather(frag_indices.begin(), frag_indices.end(), depth.begin(), cdepth.begin());
-
+	std::cout << "Sorted" << std::endl;
+	thrust::sort_by_key(cpos.begin(), cpos.end(), cdepth.begin());
 	print_pair_vec(cpos.begin(), cpos.end());
-	print_int_vec(frag_indices.begin(), frag_indices.end());
 	print_float_vec(cdepth.begin(), cdepth.end());
+
 	thrust::reduce_by_key(cpos.begin(), cpos.end(), cdepth.begin(), true_fragments.begin(), 
 			min_depth.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::maximum<float>());
 
+	std::cout << "Min depth" << std::endl;
 	print_pair_vec(true_fragments.begin(), true_fragments.end());
 	print_float_vec(min_depth.begin(), min_depth.end());
+
+	//thrust::device_vector<thrust::pair<int,int>>::iterator true_end = thrust::unique(true_fragments.begin(), true_fragments.end()) - 1;
+	print_pair_vec(true_fragments.begin(), true_fragments.end());
+
+	thrust::device_vector<int> find_real(fragments);
+	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(pos.begin(), find_real.begin())),
+			 thrust::make_zip_iterator(thrust::make_tuple(pos.end(), find_real.end())),
+			 findPositions(true_fragments.begin(), true_fragments.end()));
+	print_int_vec(find_real.begin(), find_real.end());
+	thrust::device_vector<float> min_depth_by_fragment(fragments);
+	thrust::gather(find_real.begin(), find_real.end(), min_depth.begin(), min_depth_by_fragment.begin());
+	std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
+	print_float_vec(min_depth_by_fragment.begin(), min_depth_by_fragment.end());
+	print_float_vec(depth.begin(), depth.end());
+
+	thrust::device_vector<bool> write_frag(fragments);
+	thrust::transform(min_depth_by_fragment.begin(), min_depth_by_fragment.end(), depth.begin(), write_frag.begin(), thrust::equal_to<float>());
+	std::cout << "Write fragment?" << std::endl;
+	for(int i = 0; i < fragments; i++)
+		std::cout << write_frag[i] << " ";
+	std::cout << std::endl;
+
+
 }
