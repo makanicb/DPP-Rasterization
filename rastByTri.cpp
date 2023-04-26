@@ -18,6 +18,9 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#define width 300
+#define height 300
+
 struct fragCount
 {
 	template <typename Tuple>
@@ -325,7 +328,47 @@ struct findPositions
 	}
 };
 
-int main()
+struct toRowMajor
+{
+	int w;
+	toRowMajor(int _w) : w(_w) {}
+
+	__host__ __device__
+	int operator()(const thrust::pair<int,int> &pos)
+	{
+		return pos.first + pos.second * w;
+	}
+};
+
+typedef struct image
+{
+	char *data;
+	int w, h;
+}Image;
+
+void initImage(Image *img, int w, int h)
+{
+	img->w = w;
+	img->h = h;
+	img->data = (char*)malloc(sizeof(char) * w * h);
+	for(int i = 0; i < w * h; i++)
+		img->data[i] = 0;
+}
+
+void freeImage(Image *img)
+{
+	free(img->data);
+}
+
+void writeImage(Image *img, char *filename)
+{
+	FILE* f = fopen(filename, "w");
+	fprintf(f, "P6\n%d %d\n255\n", img->w, img->h);
+	fwrite(img->data, sizeof(char), 3*img->w*img->h, f);
+	fclose(f);
+}
+
+int main(int argc, char **argv)
 {
 	thrust::device_vector<thrust::tuple<float, float, float>> p1(2);
 	thrust::device_vector<thrust::tuple<float, float, float>> p2(2);
@@ -528,5 +571,30 @@ int main()
 		std::cout << write_frag[i] << " ";
 	std::cout << std::endl;
 
+	thrust::device_vector<int> rowMajorPos(fragments);
+	thrust::transform(pos.begin(), pos.end(), rowMajorPos.begin(), toRowMajor(width));
+	print_int_vec(rowMajorPos.begin(), rowMajorPos.end());
 
+	thrust::device_vector<thrust::tuple<char,char,char>> img(width * height);
+	thrust::fill(img.begin(), img.end(), thrust::make_tuple<char,char,char>(0,0,0));
+	thrust::scatter_if(frag_colors.begin(), frag_colors.end(), rowMajorPos.begin(), write_frag.begin(), img.begin());
+
+	Image final_image;
+	initImage(&final_image, width, height);
+
+	int count = 0;
+	for(auto i = img.begin(); i < img.begin(); i++)
+	{
+		thrust::tuple<char,char,char> t = *i;
+		final_image.data[count++] = thrust::get<0>(t);
+		final_image.data[count++] = thrust::get<1>(t);
+		final_image.data[count++] = thrust::get<2>(t);
+	}
+
+	if(argc == 2)
+	{
+		writeImage(&final_image, argv[1]);
+	}
+
+	freeImage(&final_image);
 }
