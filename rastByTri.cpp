@@ -2,6 +2,7 @@
 #include <cmath>
 
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #include <thrust/iterator/zip_iterator.h>
 #include <thrust/iterator/counting_iterator.h>
 #include <thrust/iterator/permutation_iterator.h>
@@ -350,7 +351,7 @@ void initImage(Image *img, int w, int h)
 {
 	img->w = w;
 	img->h = h;
-	img->data = (char*)malloc(sizeof(char) * w * h);
+	img->data = (char*)malloc(sizeof(char) * 3 * w * h);
 	for(int i = 0; i < w * h; i++)
 		img->data[i] = 0;
 }
@@ -370,20 +371,23 @@ void writeImage(Image *img, char *filename)
 
 int main(int argc, char **argv)
 {
+	std::cout << "initialize triangles" << std::endl;
 	thrust::device_vector<thrust::tuple<float, float, float>> p1(2);
 	thrust::device_vector<thrust::tuple<float, float, float>> p2(2);
 	thrust::device_vector<thrust::tuple<float, float, float>> p3(2);
 	thrust::device_vector<thrust::tuple<char, char, char>> color(2);
 
 	p1[0] = thrust::make_tuple(0,0,0);
-	p2[0] = thrust::make_tuple(5,5,0);
-	p3[0] = thrust::make_tuple(10,0,0);
+	p2[0] = thrust::make_tuple(25,25,0);
+	p3[0] = thrust::make_tuple(50,0,0);
 	p1[1] = thrust::make_tuple(0,0,-1);
-	p2[1] = thrust::make_tuple(5,5,-1);
-	p3[1] = thrust::make_tuple(10,0,-1);
+	p2[1] = thrust::make_tuple(75,75,-1);
+	p3[1] = thrust::make_tuple(150,0,-1);
 
 	color[0] = thrust::make_tuple(255,0,0);
 	color[1] = thrust::make_tuple(0,0,255);
+
+	std::cout << "count fragments" << std::endl;
 
 	thrust::device_vector<int> frags(2);
 
@@ -402,9 +406,11 @@ int main(int argc, char **argv)
 	
 	std::cout << "Number of fragments: " << fragments << std::endl;
 
+	std::cout << "get fragments" << std::endl;
+
 	thrust::device_vector<int> frag_tri(fragments);
 	expand_int(write_index.begin(), frags.begin(), frag_tri.begin(), frag_tri.end(), 2);
-	print_int_vec(frag_tri.begin(), frag_tri.end());
+	//print_int_vec(frag_tri.begin(), frag_tri.end());
 /*
 	thrust::scatter_if
 		(thrust::counting_iterator<int>(0),
@@ -434,15 +440,15 @@ int main(int argc, char **argv)
 			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), rows.end())),
 			 rowCount());
 	
-	for(int i = 0; i < 2; i++)
-		std::cout << rows[i] << " ";
-	std::cout << std::endl;
+	//for(int i = 0; i < 2; i++)
+	//	std::cout << rows[i] << " ";
+	//std::cout << std::endl;
 
 	thrust::device_vector<int> row_off(2);
 	thrust::exclusive_scan(rows.begin(), rows.end(), row_off.begin());
-	for(int i = 0; i < 2; i++)
-		std::cout << row_off[i] << " ";
-	std::cout << std::endl;
+	//for(int i = 0; i < 2; i++)
+	//	std::cout << row_off[i] << " ";
+	//std::cout << std::endl;
 
 	int num_rows = row_off[1] + rows[1];
 
@@ -450,15 +456,15 @@ int main(int argc, char **argv)
 	
 	expand_int(row_off.begin(), rows.begin(), tri_ptr.begin(), tri_ptr.end(), 2);
 
-	for(int i = 0; i < num_rows; i++)
-		std::cout << tri_ptr[i] << " ";
-	std::cout << std::endl;	
+	//for(int i = 0; i < num_rows; i++)
+	//	std::cout << tri_ptr[i] << " ";
+	//std::cout << std::endl;	
 
 	thrust::device_vector<int> row_ptr(num_rows);
 
 	index_int(tri_ptr.begin(), row_off.begin(), row_ptr.begin(), num_rows);
 
-	print_int_vec(row_ptr.begin(), row_ptr.end());
+	//print_int_vec(row_ptr.begin(), row_ptr.end());
 
 	thrust::device_vector<int> col_count(num_rows);
 
@@ -477,13 +483,13 @@ int main(int argc, char **argv)
 			 col_count.end())),
 		colCount());
 
-	print_int_vec(col_count.begin(), col_count.end());
+	//print_int_vec(col_count.begin(), col_count.end());
 
 	thrust::device_vector<int> col_off(num_rows);
 
 	thrust::exclusive_scan(col_count.begin(), col_count.end(), col_off.begin());
 
-	print_int_vec(col_off.begin(), col_off.end());
+	//print_int_vec(col_off.begin(), col_off.end());
 
 	thrust::device_vector<int> frag_row(fragments);
 
@@ -501,8 +507,8 @@ int main(int argc, char **argv)
 		 frag_row.begin(),
 		 thrust::minus<int>());
 
-	print_int_vec(frag_row.begin(), frag_row.end());
-	print_int_vec(frag_col.begin(), frag_col.end());
+	//print_int_vec(frag_row.begin(), frag_row.end());
+	//print_int_vec(frag_col.begin(), frag_col.end());
 
 	thrust::device_vector<thrust::pair<int,int>> pos(fragments);
 	thrust::device_vector<float> depth(fragments);
@@ -522,79 +528,96 @@ int main(int argc, char **argv)
 				frag_row.end(), frag_col.end(), pos.end(), depth.end())),
 		rasterize());
 
-	std::cout << "Position and depth of fragments" << std::endl;
-	print_pair_vec(pos.begin(), pos.end());
-	print_float_vec(depth.begin(), depth.end());
+	//std::cout << "Position and depth of fragments" << std::endl;
+	//print_pair_vec(pos.begin(), pos.end());
+	//print_float_vec(depth.begin(), depth.end());
 
 	thrust::device_vector<thrust::tuple<char,char,char>> frag_colors(fragments);
 	thrust::gather(frag_tri.begin(), frag_tri.end(), color.begin(), frag_colors.begin());
 	
+	std::cout << "find fragments to write" << std::endl;
+
+	std::cout << "\tcopy position and depth" << std::endl;
 	thrust::device_vector<thrust::pair<int,int>> cpos(fragments);
 	thrust::device_vector<float> cdepth(fragments);
 
 	thrust::copy(pos.begin(), pos.end(), cpos.begin());
 	thrust::copy(depth.begin(), depth.end(), cdepth.begin());
 
+	std::cout << "\tsort fragments" << std::endl;
 	thrust::device_vector<thrust::pair<int,int>> true_fragments(fragments);
 	thrust::device_vector<float> min_depth(fragments);
 
-	std::cout << "Sorted" << std::endl;
+	//std::cout << "Sorted" << std::endl;
 	thrust::sort_by_key(cpos.begin(), cpos.end(), cdepth.begin());
-	print_pair_vec(cpos.begin(), cpos.end());
-	print_float_vec(cdepth.begin(), cdepth.end());
+	//print_pair_vec(cpos.begin(), cpos.end());
+	//print_float_vec(cdepth.begin(), cdepth.end());
 
+	std::cout << "\tget fragments at lowest depth" << std::endl;
 	thrust::reduce_by_key(cpos.begin(), cpos.end(), cdepth.begin(), true_fragments.begin(), 
 			min_depth.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::maximum<float>());
 
-	std::cout << "Min depth" << std::endl;
-	print_pair_vec(true_fragments.begin(), true_fragments.end());
-	print_float_vec(min_depth.begin(), min_depth.end());
+	//std::cout << "Min depth" << std::endl;
+	//print_pair_vec(true_fragments.begin(), true_fragments.end());
+	//print_float_vec(min_depth.begin(), min_depth.end());
 
 	//thrust::device_vector<thrust::pair<int,int>>::iterator true_end = thrust::unique(true_fragments.begin(), true_fragments.end()) - 1;
-	print_pair_vec(true_fragments.begin(), true_fragments.end());
+	//print_pair_vec(true_fragments.begin(), true_fragments.end());
 
+	std::cout << "\tfor each position, get the shallowest depth of a fragment at that position" << std::endl;
 	thrust::device_vector<int> find_real(fragments);
+	std::cout <<"\t\tfind each fragment position in list of lowest fragment positions" << std::endl;
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(pos.begin(), find_real.begin())),
 			 thrust::make_zip_iterator(thrust::make_tuple(pos.end(), find_real.end())),
 			 findPositions(true_fragments.begin(), true_fragments.end()));
-	print_int_vec(find_real.begin(), find_real.end());
+	//print_int_vec(find_real.begin(), find_real.end());
+	std::cout << "\t\tgather the shallowest depth for each fragment position" << std::endl;
 	thrust::device_vector<float> min_depth_by_fragment(fragments);
 	thrust::gather(find_real.begin(), find_real.end(), min_depth.begin(), min_depth_by_fragment.begin());
-	std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
-	print_float_vec(min_depth_by_fragment.begin(), min_depth_by_fragment.end());
-	print_float_vec(depth.begin(), depth.end());
+	//std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
+	//print_float_vec(min_depth_by_fragment.begin(), min_depth_by_fragment.end());
+	//print_float_vec(depth.begin(), depth.end());
 
+	std::cout << "\tchoose fragments to write" << std::endl;
 	thrust::device_vector<bool> write_frag(fragments);
 	thrust::transform(min_depth_by_fragment.begin(), min_depth_by_fragment.end(), depth.begin(), write_frag.begin(), thrust::equal_to<float>());
-	std::cout << "Write fragment?" << std::endl;
-	for(int i = 0; i < fragments; i++)
-		std::cout << write_frag[i] << " ";
-	std::cout << std::endl;
+	//std::cout << "Write fragment?" << std::endl;
+	//for(int i = 0; i < fragments; i++)
+	//	std::cout << write_frag[i] << " ";
+	//std::cout << std::endl;
+	
+	std::cout << "write fragments" << std::endl;
 
 	thrust::device_vector<int> rowMajorPos(fragments);
 	thrust::transform(pos.begin(), pos.end(), rowMajorPos.begin(), toRowMajor(width));
-	print_int_vec(rowMajorPos.begin(), rowMajorPos.end());
+	//print_int_vec(rowMajorPos.begin(), rowMajorPos.end());
 
 	thrust::device_vector<thrust::tuple<char,char,char>> img(width * height);
-	thrust::fill(img.begin(), img.end(), thrust::make_tuple<char,char,char>(0,0,0));
+	thrust::fill(img.begin(), img.end(), thrust::make_tuple<char,char,char>(255,255,255));
 	thrust::scatter_if(frag_colors.begin(), frag_colors.end(), rowMajorPos.begin(), write_frag.begin(), img.begin());
+
+	thrust::host_vector<thrust::tuple<char,char,char>> h_img = img;
 
 	Image final_image;
 	initImage(&final_image, width, height);
 
 	int count = 0;
-	for(auto i = img.begin(); i < img.begin(); i++)
+	for(auto i = h_img.begin(); i < h_img.end(); i++)
 	{
 		thrust::tuple<char,char,char> t = *i;
 		final_image.data[count++] = thrust::get<0>(t);
 		final_image.data[count++] = thrust::get<1>(t);
 		final_image.data[count++] = thrust::get<2>(t);
 	}
-
 	if(argc == 2)
 	{
 		writeImage(&final_image, argv[1]);
 	}
-
+	//char *col = final_image.data;
+	//for(int i = 0; i < 60; i+=3)
+	//{
+	//	std::cout<<(int)col[i]<<","<<(int)col[i+1]<<","<<(int)col[i+2]<<std::endl;
+	//}
+		
 	freeImage(&final_image);
 }
