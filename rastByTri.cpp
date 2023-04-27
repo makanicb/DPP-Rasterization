@@ -556,7 +556,7 @@ int main(int argc, char **argv)
 	thrust::gather(sorted_inds.begin(), sorted_inds.end(), depth.begin(), cdepth.begin());
 	//print_pair_vec(cpos.begin(), cpos.end());
 	//print_int_vec(sorted_inds.begin(), sorted_inds.end());
-	print_float_vec(cdepth.begin(), cdepth.end());
+	//print_float_vec(cdepth.begin(), cdepth.end());
 
 	std::cout << "\tget fragments at lowest depth" << std::endl;
 	int unique_positions;
@@ -573,16 +573,16 @@ int main(int argc, char **argv)
 			min_depth.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::maximum<float>());
 	thrust::reduce_by_key(cpos.begin(), cpos.end(), thrust::make_constant_iterator<int>(1), thrust::make_discard_iterator(), 
 			pos_count.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::plus<int>());
-	print_int_vec(pos_count.begin(), pos_count.end());
+	//print_int_vec(pos_count.begin(), pos_count.end());
 	thrust::device_vector<int> pos_start_ind(unique_positions);
 	thrust::exclusive_scan(pos_count.begin(), pos_count.end(), pos_start_ind.begin());
-	print_int_vec(pos_start_ind.begin(), pos_start_ind.end());
+	//print_int_vec(pos_start_ind.begin(), pos_start_ind.end());
 	thrust::device_vector<int> depth_map(fragments);
 	expand_int(pos_start_ind.begin(), pos_count.begin(), depth_map.begin(), depth_map.end(), unique_positions);
-	print_int_vec(depth_map.begin(), depth_map.end());
+	//print_int_vec(depth_map.begin(), depth_map.end());
 	thrust::device_vector<float> exp_min_depth(fragments);
 	thrust::gather(depth_map.begin(), depth_map.end(), min_depth.begin(), exp_min_depth.begin());
-	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
+	//print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
 /*
 	//std::cout << "Min depth" << std::endl;
 	//print_pair_vec(true_fragments.begin(), true_fragments.end());
@@ -601,27 +601,28 @@ int main(int argc, char **argv)
 	std::cout << "\t\tgather the shallowest depth for each fragment position" << std::endl;
 	thrust::device_vector<float> min_depth_by_fragment(fragments);
 	thrust::gather(find_real.begin(), find_real.end(), min_depth.begin(), min_depth_by_fragment.begin());
-	//std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
-	//print_float_vec(min_depth_by_fragment.begin(), min_depth_by_fragment.end());
-	//print_float_vec(depth.begin(), depth.end());
+*/
+	std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
+	//print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
+	//print_float_vec(cdepth.begin(), cdepth.end());
 
 	std::cout << "\tchoose fragments to write" << std::endl;
 	thrust::device_vector<bool> write_frag(fragments);
-	thrust::transform(min_depth_by_fragment.begin(), min_depth_by_fragment.end(), depth.begin(), write_frag.begin(), thrust::equal_to<float>());
+	thrust::transform(exp_min_depth.begin(), exp_min_depth.end(), cdepth.begin(), write_frag.begin(), thrust::equal_to<float>());
 	//std::cout << "Write fragment?" << std::endl;
 	//for(int i = 0; i < fragments; i++)
 	//	std::cout << write_frag[i] << " ";
 	//std::cout << std::endl;
-	
+
 	std::cout << "write fragments" << std::endl;
 
 	thrust::device_vector<int> rowMajorPos(fragments);
-	thrust::transform(pos.begin(), pos.end(), rowMajorPos.begin(), toRowMajor(width));
+	thrust::transform(cpos.begin(), cpos.end(), rowMajorPos.begin(), toRowMajor(width));
 	//print_int_vec(rowMajorPos.begin(), rowMajorPos.end());
 
 	thrust::device_vector<thrust::tuple<char,char,char>> img(width * height);
 	thrust::fill(img.begin(), img.end(), thrust::make_tuple<char,char,char>(255,255,255));
-	thrust::scatter_if(frag_colors.begin(), frag_colors.end(), rowMajorPos.begin(), write_frag.begin(), img.begin());
+	thrust::scatter_if(cfrag_colors.begin(), cfrag_colors.end(), rowMajorPos.begin(), write_frag.begin(), img.begin());
 
 	thrust::host_vector<thrust::tuple<char,char,char>> h_img = img;
 
@@ -647,5 +648,5 @@ int main(int argc, char **argv)
 	//}
 		
 	freeImage(&final_image);
-*/
+
 }
