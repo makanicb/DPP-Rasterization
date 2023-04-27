@@ -580,6 +580,9 @@ int main(int argc, char **argv)
 	thrust::device_vector<int> depth_map(fragments);
 	expand_int(pos_start_ind.begin(), pos_count.begin(), depth_map.begin(), depth_map.end(), unique_positions);
 	print_int_vec(depth_map.begin(), depth_map.end());
+	thrust::device_vector<float> exp_min_depth(fragments);
+	thrust::gather(depth_map.begin(), depth_map.end(), min_depth.begin(), exp_min_depth.begin());
+	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
 /*
 	//std::cout << "Min depth" << std::endl;
 	//print_pair_vec(true_fragments.begin(), true_fragments.end());
