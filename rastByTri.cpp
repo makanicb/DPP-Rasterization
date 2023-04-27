@@ -380,11 +380,11 @@ int main(int argc, char **argv)
 	thrust::device_vector<thrust::tuple<char, char, char>> color(2);
 
 	p1[0] = thrust::make_tuple(0,0,0);
-	p2[0] = thrust::make_tuple(5,5,0);
-	p3[0] = thrust::make_tuple(10,0,0);
+	p2[0] = thrust::make_tuple(75,75,0);
+	p3[0] = thrust::make_tuple(150,0,0);
 	p1[1] = thrust::make_tuple(0,0,-1);
-	p2[1] = thrust::make_tuple(10,10,-1);
-	p3[1] = thrust::make_tuple(20,0,-1);
+	p2[1] = thrust::make_tuple(150,150,-1);
+	p3[1] = thrust::make_tuple(300,0,-1);
 
 	color[0] = thrust::make_tuple(255,0,0);
 	color[1] = thrust::make_tuple(0,0,255);
@@ -574,6 +574,7 @@ int main(int argc, char **argv)
 	thrust::reduce_by_key(cpos.begin(), cpos.end(), thrust::make_constant_iterator<int>(1), thrust::make_discard_iterator(), 
 			pos_count.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::plus<int>());
 	//print_int_vec(pos_count.begin(), pos_count.end());
+	std::cout << "\tfor each position, get the shallowest depth of a fragment at that position" << std::endl;
 	thrust::device_vector<int> pos_start_ind(unique_positions);
 	thrust::exclusive_scan(pos_count.begin(), pos_count.end(), pos_start_ind.begin());
 	//print_int_vec(pos_start_ind.begin(), pos_start_ind.end());
@@ -602,7 +603,7 @@ int main(int argc, char **argv)
 	thrust::device_vector<float> min_depth_by_fragment(fragments);
 	thrust::gather(find_real.begin(), find_real.end(), min_depth.begin(), min_depth_by_fragment.begin());
 */
-	std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
+	//std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
 	//print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
 	//print_float_vec(cdepth.begin(), cdepth.end());
 
