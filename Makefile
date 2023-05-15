@@ -12,7 +12,7 @@
 
 source = $(wildcard *.cpp)
 objects = $(addsuffix .o, $(basename $(source)))
-flags = -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP
+flags = -g -W -Wall -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP
 target = rast
 
 $(target) : $(objects)

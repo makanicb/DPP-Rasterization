@@ -46,17 +46,17 @@ struct fragCount
 		{
 			float ed1, ed2, ed3;
 			bool e1 = false, e2 = false, e3 = false;
-			if(y1 < y2 && i >= y1 && i <= y2 || y1 > y2 && i >= y2 && i <= y1) 
+			if((y1 < y2 && i >= y1 && i <= y2) || (y1 > y2 && i >= y2 && i <= y1))
 			{
 				ed1 = (i - y1) * (x2-x1) / (y2-y1) + x1;
 				e1 = true;
 			}
-			if(y2 < y3 && i >= y2 && i <= y3 || y2 > y3 && i >= y3 && i <= y2) 
+			if((y2 < y3 && i >= y2 && i <= y3) || (y2 > y3 && i >= y3 && i <= y2)) 
 			{
 				ed2 = (i - y2) * (x3-x2) / (y3-y2) + x2;
 				e2 = true;
 			}
-			if(y1 < y3 && i >= y1 && i <= y3 || y1 > y3 && i >= y3 && i <= y1) 
+			if((y1 < y3 && i >= y1 && i <= y3) || (y1 > y3 && i >= y3 && i <= y1)) 
 			{
 				ed2 = (i - y1) * (x3-x1) / (y3-y1) + x1;
 				ed3 = true;
@@ -127,17 +127,17 @@ struct rasterize
 		int y = ceil(minY) + thrust::get<3>(t);
 		float ed1, ed2, ed3;
 		bool e1 = false, e2 = false, e3 = false;
-		if(y1 < y2 && y >= y1 && y <= y2 || y1 > y2 && y >= y2 && y <= y1) 
+		if((y1 < y2 && y >= y1 && y <= y2) || (y1 > y2 && y >= y2 && y <= y1)) 
 		{
 			ed1 = (y - y1) * (x2-x1) / (y2-y1) + x1;
 			e1 = true;
 		}
-		if(y2 < y3 && y >= y2 && y <= y3 || y2 > y3 && y >= y3 && y <= y2) 
+		if((y2 < y3 && y >= y2 && y <= y3) || (y2 > y3 && y >= y3 && y <= y2)) 
 		{
 			ed2 = (y - y2) * (x3-x2) / (y3-y2) + x2;
 			e2 = true;
 		}
-		if(y1 < y3 && y >= y1 && y <= y3 || y1 > y3 && y >= y3 && y <= y1) 
+		if((y1 < y3 && y >= y1 && y <= y3) || (y1 > y3 && y >= y3 && y <= y1))
 		{
 			ed2 = (y - y1) * (x3-x1) / (y3-y1) + x1;
 			ed3 = true;
@@ -201,50 +201,59 @@ struct colCount
 		x3 = thrust::get<0>(thrust::get<2>(t));
 		y3 = thrust::get<1>(thrust::get<2>(t));
 		int row = thrust::get<3>(t);
+		float minY = y1 < y2 ? y1 : y2;
+		minY = minY < y3 ? minY : y3;
+		float y = ceil(minY) + row;
 		float ed1, ed2, ed3;
 		bool e1 = false, e2 = false, e3 = false;
-		if(y1 < y2 && row >= y1 && row <= y2 || y1 > y2 && row >= y2 && row <= y1) 
+		if((y1 < y2 && y >= y1 && y <= y2) || (y1 > y2 && y >= y2 && y <= y1)) 
 		{
-			ed1 = (row - y1) * (x2-x1) / (y2-y1) + x1;
+			ed1 = (y - y1) * (x2-x1) / (y2-y1) + x1;
 			e1 = true;
 		}
-		if(y2 < y3 && row >= y2 && row <= y3 || y2 > y3 && row >= y3 && row <= y2) 
+		if((y2 < y3 && y >= y2 && row <= y3) || (y2 > y3 && y >= y3 && y <= y2)) 
 		{
-			ed2 = (row - y2) * (x3-x2) / (y3-y2) + x2;
+			ed2 = (y - y2) * (x3-x2) / (y3-y2) + x2;
 			e2 = true;
 		}
-		if(y1 < y3 && row >= y1 && row <= y3 || y1 > y3 && row >= y3 && row <= y1) 
+		if((y1 < y3 && y >= y1 && y <= y3) || (y1 > y3 && y >= y3 && y <= y1)) 
 		{
-			ed2 = (row - y1) * (x3-x1) / (y3-y1) + x1;
-			ed3 = true;
+			ed3 = (y - y1) * (x3-x1) / (y3-y1) + x1;
+			e3 = true;
 		}
 
 		float end1, end2;
-		
 		if(e1 && e2 && e3)
 		{
 			float eq = ed1 == ed2 ? ed1 : ed3;
 			float neq = ed1 == ed2 ? ed3 : ed1;
 			end1 = eq < neq ? eq : neq;
 			end2 = eq < neq ? neq : eq;
+			std::cout << y << "a" << std::endl;
 		}
 		else if (e1 && e2)
 		{
 			end1 = ed1 < ed2 ? ed1 : ed2;
 			end2 = ed1 < ed2 ? ed2 : ed1;
+			std::cout << y << "b" << std::endl;
 		}
 		else if(e2 && e3)
 		{
 			end1 = ed2 < ed3 ? ed2 : ed3;
 			end2 = ed2 < ed3 ? ed3 : ed2;
+			std::cout << y << "c" << std::endl;
 		}
 		else if(e1 && e3)
 		{
 			end1 = ed1 < ed3 ? ed1 : ed3;
 			end2 = ed1 < ed3 ? ed3 : ed1;
+			std::cout << y << "d" << std::endl;
 		}
-		
-		thrust::get<4>(t) = floor(end2) - ceil(end1);
+		if(floor(end2) < ceil(end1)){
+			thrust::get<4>(t) = 0;
+		}else{	
+			thrust::get<4>(t) = floor(end2) - ceil(end1);
+		}
 	}
 };
 
@@ -382,7 +391,8 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 
 	thrust::device_vector<int> frag_tri(fragments);
 	expand_int(write_index.begin(), frags.begin(), frag_tri.begin(), frag_tri.end(), numTri);
-	//print_int_vec(frag_tri.begin(), frag_tri.end());
+	std::cout << "Which triangle does each fragment belong to?" << std::endl;
+	print_int_vec(frag_tri.begin(), frag_tri.end());
 /*
 	thrust::scatter_if
 		(thrust::counting_iterator<int>(0),
@@ -410,15 +420,17 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), rows.end())),
 			 rowCount());
 	
-	//for(int i = 0; i < 2; i++)
-	//	std::cout << rows[i] << " ";
-	//std::cout << std::endl;
+	std::cout << "How many rows does each triangle have?" << std::endl;
+	for(int i = 0; i < numTri; i++)
+		std::cout << rows[i] << " ";
+	std::cout << std::endl;
 
 	thrust::device_vector<int> row_off(numTri);
 	thrust::exclusive_scan(rows.begin(), rows.end(), row_off.begin());
-	//for(int i = 0; i < 2; i++)
-	//	std::cout << row_off[i] << " ";
-	//std::cout << std::endl;
+	std::cout << "What is the row offset of each triangle?" << std::endl;
+	for(int i = 0; i < numTri; i++)
+		std::cout << row_off[i] << " ";
+	std::cout << std::endl;
 
 	int num_rows = row_off[numTri-1] + rows[numTri-1];
 
@@ -426,15 +438,17 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	
 	expand_int(row_off.begin(), rows.begin(), tri_ptr.begin(), tri_ptr.end(), numTri);
 
-	//for(int i = 0; i < num_rows; i++)
-	//	std::cout << tri_ptr[i] << " ";
-	//std::cout << std::endl;	
+	std::cout << "What triangle does each row belong to?" << std::endl;
+	for(int i = 0; i < num_rows; i++)
+		std::cout << tri_ptr[i] << " ";
+	std::cout << std::endl;	
 
 	thrust::device_vector<int> row_ptr(num_rows);
 
 	index_int(tri_ptr.begin(), row_off.begin(), row_ptr.begin(), num_rows);
-
-	//print_int_vec(row_ptr.begin(), row_ptr.end());
+	
+	std::cout << "The index of each row." << std::endl;
+	print_int_vec(row_ptr.begin(), row_ptr.end());
 
 	thrust::device_vector<int> col_count(num_rows);
 
@@ -453,13 +467,15 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 			 col_count.end())),
 		colCount());
 
-	//print_int_vec(col_count.begin(), col_count.end());
+	std::cout << "How many columns does each row have?" << std::endl;
+	print_int_vec(col_count.begin(), col_count.end());
 
 	thrust::device_vector<int> col_off(num_rows);
 
 	thrust::exclusive_scan(col_count.begin(), col_count.end(), col_off.begin());
 
-	//print_int_vec(col_off.begin(), col_off.end());
+	std::cout << "Column offsets by row" << std::endl;
+	print_int_vec(col_off.begin(), col_off.end());
 
 	thrust::device_vector<int> frag_row(fragments);
 
@@ -477,8 +493,9 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		 frag_row.begin(),
 		 thrust::minus<int>());
 
-	//print_int_vec(frag_row.begin(), frag_row.end());
-	//print_int_vec(frag_col.begin(), frag_col.end());
+	std::cout << "Frag positions by row and column in every triangle." << std::endl;
+	print_int_vec(frag_row.begin(), frag_row.end());
+	print_int_vec(frag_col.begin(), frag_col.end());
 
 	thrust::device_vector<thrust::pair<int,int>> pos(fragments);
 	thrust::device_vector<float> depth(fragments);
@@ -498,9 +515,9 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 				frag_row.end(), frag_col.end(), pos.end(), depth.end())),
 		rasterize());
 
-	//std::cout << "Position and depth of fragments" << std::endl;
-	//print_pair_vec(pos.begin(), pos.end());
-	//print_float_vec(depth.begin(), depth.end());
+	std::cout << "Position and depth of fragments" << std::endl;
+	print_pair_vec(pos.begin(), pos.end());
+	print_float_vec(depth.begin(), depth.end());
 
 	thrust::device_vector<thrust::tuple<char,char,char>> frag_colors(fragments);
 	thrust::gather(frag_tri.begin(), frag_tri.end(), color.begin(), frag_colors.begin());
