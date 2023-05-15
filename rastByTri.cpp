@@ -21,8 +21,8 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
-#define width 300
-#define height 300
+#define WIDTH 300
+#define HEIGHT 300
 
 struct fragCount
 {
@@ -110,6 +110,15 @@ struct rasterize
 		x3 = thrust::get<0>(thrust::get<2>(t));
 		y3 = thrust::get<1>(thrust::get<2>(t));
 		z3 = thrust::get<2>(thrust::get<2>(t));
+		/*std::cout << x1 << ","
+			  << y1 << ","
+			  << z1 << std::endl;
+		std::cout << x2 << ","
+			  << y2 << ","
+			  << z2 << std::endl;
+		std::cout << x3 << ","
+			  << y3 << ","
+			  << z3 << std::endl;*/
 		//calculate triangle plane
 		float x_coe = ((y2-y1)*(z3-z1)-(y3-y1)*(z2-z1));
 		float y_coe = ((x2-x1)*(z3-z1)-(x3-x1)*(z2-z1));
@@ -371,48 +380,37 @@ void writeImage(Image *img, char *filename)
 	fclose(f);
 }
 
-int main(int argc, char **argv)
+void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>> &p1,
+		thrust::device_vector<thrust::tuple<float, float, float>> &p2,
+		thrust::device_vector<thrust::tuple<float, float, float>> &p3,
+		thrust::device_vector<thrust::tuple<char, char, char>> &color,
+		int numTri, int width, int height, Image &final_image)
 {
-	std::cout << "initialize triangles" << std::endl;
-	thrust::device_vector<thrust::tuple<float, float, float>> p1(2);
-	thrust::device_vector<thrust::tuple<float, float, float>> p2(2);
-	thrust::device_vector<thrust::tuple<float, float, float>> p3(2);
-	thrust::device_vector<thrust::tuple<char, char, char>> color(2);
-
-	p1[0] = thrust::make_tuple(0,0,0);
-	p2[0] = thrust::make_tuple(75,75,0);
-	p3[0] = thrust::make_tuple(150,0,0);
-	p1[1] = thrust::make_tuple(0,0,-1);
-	p2[1] = thrust::make_tuple(150,150,-1);
-	p3[1] = thrust::make_tuple(300,0,-1);
-
-	color[0] = thrust::make_tuple(255,0,0);
-	color[1] = thrust::make_tuple(0,0,255);
-
-	std::cout << "count fragments" << std::endl;
-
-	thrust::device_vector<int> frags(2);
+		
+	thrust::device_vector<int> frags(numTri);
 
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), frags.begin())),
 			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), frags.end())),
 			 fragCount());
-	std::cout << "# frags by triange: " << frags[0] << ", " << frags[1] << std::endl;
+	std::cout << "# frags by triange: " << std::endl;
+	print_int_vec(frags.begin(), frags.end());
 
-	thrust::device_vector<int> write_index(2);
+	thrust::device_vector<int> write_index(numTri);
 
 	thrust::exclusive_scan(frags.begin(), frags.end(), write_index.begin());
 
-	std::cout << "write position by triange: " << write_index[0] << ", " << write_index[1] << std::endl;
+	std::cout << "write position by triange: " << std::endl;
+	print_int_vec(write_index.begin(), write_index.end());
 
-	int fragments = write_index[1] + frags[1];
+	int fragments = write_index[numTri-1] + frags[numTri-1];
 	
 	std::cout << "Number of fragments: " << fragments << std::endl;
 
 	std::cout << "get fragments" << std::endl;
 
 	thrust::device_vector<int> frag_tri(fragments);
-	expand_int(write_index.begin(), frags.begin(), frag_tri.begin(), frag_tri.end(), 2);
-	//print_int_vec(frag_tri.begin(), frag_tri.end());
+	expand_int(write_index.begin(), frags.begin(), frag_tri.begin(), frag_tri.end(), numTri);
+	print_int_vec(frag_tri.begin(), frag_tri.end());
 /*
 	thrust::scatter_if
 		(thrust::counting_iterator<int>(0),
@@ -432,12 +430,10 @@ int main(int argc, char **argv)
 	thrust::transform
 		(thrust::counting_iterator<int>(0),
 		 thrust::counting_iterator<int>(fragments),
-		 thrust::make_permutation_iterator(write_index.begin(),
-			 			   frag_pos.begin()),
-		 frag_ind.begin(),
+		 thrust::make_permutation_iterator(write_index.begin(), frag_pos.begin()), frag_ind.begin(),
 		 thrust::minus<int>());
 */	
-	thrust::device_vector<int> rows(2);
+	thrust::device_vector<int> rows(numTri);
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), rows.begin())),
 			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), rows.end())),
 			 rowCount());
@@ -446,17 +442,17 @@ int main(int argc, char **argv)
 	//	std::cout << rows[i] << " ";
 	//std::cout << std::endl;
 
-	thrust::device_vector<int> row_off(2);
+	thrust::device_vector<int> row_off(numTri);
 	thrust::exclusive_scan(rows.begin(), rows.end(), row_off.begin());
 	//for(int i = 0; i < 2; i++)
 	//	std::cout << row_off[i] << " ";
 	//std::cout << std::endl;
 
-	int num_rows = row_off[1] + rows[1];
+	int num_rows = row_off[numTri-1] + rows[numTri-1];
 
 	thrust::device_vector<int> tri_ptr(num_rows);
 	
-	expand_int(row_off.begin(), rows.begin(), tri_ptr.begin(), tri_ptr.end(), 2);
+	expand_int(row_off.begin(), rows.begin(), tri_ptr.begin(), tri_ptr.end(), numTri);
 
 	//for(int i = 0; i < num_rows; i++)
 	//	std::cout << tri_ptr[i] << " ";
@@ -626,10 +622,7 @@ int main(int argc, char **argv)
 	thrust::scatter_if(cfrag_colors.begin(), cfrag_colors.end(), rowMajorPos.begin(), write_frag.begin(), img.begin());
 
 	thrust::host_vector<thrust::tuple<char,char,char>> h_img = img;
-
-	Image final_image;
-	initImage(&final_image, width, height);
-
+	
 	int count = 0;
 	for(auto i = h_img.begin(); i < h_img.end(); i++)
 	{
@@ -638,6 +631,41 @@ int main(int argc, char **argv)
 		final_image.data[count++] = thrust::get<1>(t);
 		final_image.data[count++] = thrust::get<2>(t);
 	}
+	//char *col = final_image.data;
+	//for(int i = 0; i < 60; i+=3)
+	//{
+	//	std::cout<<(int)col[i]<<","<<(int)col[i+1]<<","<<(int)col[i+2]<<std::endl;
+	//}
+}
+
+int main(int argc, char **argv)
+{
+	std::cout << "initialize triangles" << std::endl;
+	thrust::device_vector<thrust::tuple<float, float, float>> p1(2);
+	thrust::device_vector<thrust::tuple<float, float, float>> p2(2);
+	thrust::device_vector<thrust::tuple<float, float, float>> p3(2);
+	thrust::device_vector<thrust::tuple<char, char, char>> color(2);
+
+	p1[0] = thrust::make_tuple(0,0,0);
+	p2[0] = thrust::make_tuple(5,5,0);
+	p3[0] = thrust::make_tuple(10,0,0);
+	p1[1] = thrust::make_tuple(10,0,-0.5);
+	p2[1] = thrust::make_tuple(15,15,-0.5);
+	p3[1] = thrust::make_tuple(20,0,-0.5);
+	//p1[2] = thrust::make_tuple(20,0,-1);
+	//p2[2] = thrust::make_tuple(25,25,-1);
+	//p3[2] = thrust::make_tuple(30,0,-1);
+
+	color[0] = thrust::make_tuple(255,0,0);
+	color[1] = thrust::make_tuple(0,0,255);
+	//color[2] = thrust::make_tuple(0,255,0);
+
+	int numTri = 2;
+
+	Image final_image;
+	initImage(&final_image, WIDTH, HEIGHT);
+	RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image);
+
 	if(argc == 2)
 	{
 		writeImage(&final_image, argv[1]);
@@ -649,5 +677,4 @@ int main(int argc, char **argv)
 	//}
 		
 	freeImage(&final_image);
-
 }
