@@ -2,3 +2,4 @@
 pnmtopng
 *.pnm
 *.png
+*.o
