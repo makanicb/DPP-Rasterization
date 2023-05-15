@@ -382,7 +382,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 
 	thrust::device_vector<int> frag_tri(fragments);
 	expand_int(write_index.begin(), frags.begin(), frag_tri.begin(), frag_tri.end(), numTri);
-	print_int_vec(frag_tri.begin(), frag_tri.end());
+	//print_int_vec(frag_tri.begin(), frag_tri.end());
 /*
 	thrust::scatter_if
 		(thrust::counting_iterator<int>(0),
