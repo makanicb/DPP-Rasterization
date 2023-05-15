@@ -58,8 +58,8 @@ struct fragCount
 			}
 			if((y1 < y3 && i >= y1 && i <= y3) || (y1 > y3 && i >= y3 && i <= y1)) 
 			{
-				ed2 = (i - y1) * (x3-x1) / (y3-y1) + x1;
-				ed3 = true;
+				ed3 = (i - y1) * (x3-x1) / (y3-y1) + x1;
+				e3 = true;
 			}
 
 			float end1, end2;
@@ -124,7 +124,7 @@ struct rasterize
 		float y_coe = ((x2-x1)*(z3-z1)-(x3-x1)*(z2-z1));
 		float z_coe = ((x2-x1)*(y3-y1)-(x3-x1)*(y2-y1));
 		float minY = y1 < y2 ? y1 : (y2 < y3 ? y2 : y3);
-		int y = ceil(minY) + thrust::get<3>(t);
+		float y = ceil(minY) + thrust::get<3>(t);
 		float ed1, ed2, ed3;
 		bool e1 = false, e2 = false, e3 = false;
 		if((y1 < y2 && y >= y1 && y <= y2) || (y1 > y2 && y >= y2 && y <= y1)) 
@@ -139,8 +139,8 @@ struct rasterize
 		}
 		if((y1 < y3 && y >= y1 && y <= y3) || (y1 > y3 && y >= y3 && y <= y1))
 		{
-			ed2 = (y - y1) * (x3-x1) / (y3-y1) + x1;
-			ed3 = true;
+			ed3 = (y - y1) * (x3-x1) / (y3-y1) + x1;
+			e3 = true;
 		}
 
 		float end1;
