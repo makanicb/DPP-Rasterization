@@ -103,56 +103,8 @@ struct fragCount
 		int frags = 0;
 		for(int i = low; i <= high; i++)
 		{
-			float ed1, ed2, ed3;
-			bool e1 = false, e2 = false, e3 = false;
-			if((y1 < y2 && i >= y1 && i <= y2) || (y1 > y2 && i >= y2 && i <= y1))
-			{
-				ed1 = (i - y1) * (x2-x1) / (y2-y1) + x1;
-				e1 = true;
-			}
-			if((y2 < y3 && i >= y2 && i <= y3) || (y2 > y3 && i >= y3 && i <= y2)) 
-			{
-				ed2 = (i - y2) * (x3-x2) / (y3-y2) + x2;
-				e2 = true;
-			}
-			if((y1 < y3 && i >= y1 && i <= y3) || (y1 > y3 && i >= y3 && i <= y1)) 
-			{
-				ed3 = (i - y1) * (x3-x1) / (y3-y1) + x1;
-				e3 = true;
-			}
-
 			float end1, end2;
-			
-			if(y1 == y2 && y2 == y3 && y3 == i)
-			{
-				end1 = x1 < x2 ? x1 : x2;
-				end1 = end1 < x3 ? end1 : x3;
-				end2 = x1 < x2 ? x2 : x1;
-				end2 = end2 < x3 ? x3 : end2;
-			}
-			else if(e1 && e2 && e3)
-			{
-				end1 = ed1 < ed2 ? ed1 : ed2;
-				end1 = end1 < ed3 ? end1 : ed3;
-				end2 = ed1 < ed2 ? ed2 : ed1;
-				end2 = end2 < ed3 ? ed3 : end2;
-			}
-			else if (e1 && e2)
-			{
-				end1 = ed1 < ed2 ? ed1 : ed2;
-				end2 = ed1 < ed2 ? ed2 : ed1;
-			}
-			else if(e2 && e3)
-			{
-				end1 = ed2 < ed3 ? ed2 : ed3;
-				end2 = ed2 < ed3 ? ed3 : ed2;
-			}
-			else if(e1 && e3)
-			{
-				end1 = ed1 < ed3 ? ed1 : ed3;
-				end2 = ed1 < ed3 ? ed3 : ed1;
-			}
-			
+			getEnds(x1,y1,x2,y2,x3,y3,i,end1,end2);
 			frags += floor(end2) - ceil(end1) + 1;
 		}
 
@@ -186,55 +138,11 @@ struct rasterize
 			  << y3 << ","
 			  << z3 << std::endl;*/
 		//calculate triangle plane
-		if((y3-y1) * (x1-x2) == (y1-y2) * (x3-x1))
-			std::cout << "LINE!" << std::endl;
-		else
-			std::cout << "NOT LINE!" << std::endl;
 		float minY = y1 < y2 ? y1 : y2;
 		minY = minY < y3 ? minY : y3;
 		float y = ceil(minY) + thrust::get<3>(t);
-		float ed1, ed2, ed3;
-		bool e1 = false, e2 = false, e3 = false;
-		if((y1 < y2 && y >= y1 && y <= y2) || (y1 > y2 && y >= y2 && y <= y1)) 
-		{
-			ed1 = (y - y1) * (x2-x1) / (y2-y1) + x1;
-			e1 = true;
-		}
-		if((y2 < y3 && y >= y2 && y <= y3) || (y2 > y3 && y >= y3 && y <= y2)) 
-		{
-			ed2 = (y - y2) * (x3-x2) / (y3-y2) + x2;
-			e2 = true;
-		}
-		if((y1 < y3 && y >= y1 && y <= y3) || (y1 > y3 && y >= y3 && y <= y1))
-		{
-			ed3 = (y - y1) * (x3-x1) / (y3-y1) + x1;
-			e3 = true;
-		}
-
-		float end1;
-		
-		if(y1 == y2 && y2 == y3 && y3 == y)
-		{
-			end1 = x1 < x2 ? x1 : x2;
-			end1 = end1 < x3 ? end1 : x3;
-		}
-		if(e1 && e2 && e3)
-		{
-			end1 = ed1 < ed2 ? ed1 : ed2;
-			end1 = end1 < ed3 ? end1 : ed3;
-		}
-		else if (e1 && e2)
-		{
-			end1 = ed1 < ed2 ? ed1 : ed2;
-		}
-		else if(e2 && e3)
-		{
-			end1 = ed2 < ed3 ? ed2 : ed3;
-		}
-		else if(e1 && e3)
-		{
-			end1 = ed1 < ed3 ? ed1 : ed3;
-		}
+		float end1, end2;
+		getEnds(x1,y1,x2,y2,x3,y3,y,end1,end2);
 
 		int x = ceil(end1) + thrust::get<4>(t);
 		float z;
@@ -243,70 +151,19 @@ struct rasterize
 		float z_coe = ((x2-x1)*(y3-y1)-(x3-x1)*(y2-y1));
 		//z_coe is zero if and only if (x2-x1)*(y3-y1)==(x3-x1)*(y2-y1)
 		//Then if z_coe is zero then the triangle is a line on the xy plane
-		if(z_coe)
-		{
+		if(z_coe){
 			z = z1 - (x_coe*(x-x1)+y_coe*(y1-y))/z_coe;
+		}else if(y1 != y2 || y2 != y3 || y1 != y3){
+			float minZ, maxZ; 
+			getEnds(z1,y1,z2,y2,z3,y3,y,minZ,maxZ);
+			z = maxZ;
+		}else if(x1 != x2 || x2 != x3 || x1 != x3){
+			float minZ, maxZ;
+			getEnds(z1,x1,z2,x2,z3,x3,x,minZ,maxZ);
+			z = maxZ;
 		}else{
-			//Get the minimum depth that z could be
-			float t1, t2, t3;	
-			if(e1 && e2 && e3)
-			{
-				t1 = (y-y1)/(y2-y1) * (z2-z1) + z1;
-				t2 = (y-y2)/(y3-y2) * (z3-z2) + z1;
-				t3 = (y-y2)/(y3-y2) * (z3-z2) + z1;
-				z = t1 > t2 ? t1 : t2;
-				z = z > t3 ? z : t3;
-			}
-			else if(e1 && e2)
-			{
-				t1 = (y-y1)/(y2-y1) * (z2-z1) + z1;
-				t2 = (y-y2)/(y3-y2) * (z3-z2) + z1;
-				z = t1 > t2 ? t1 : t2;
-			}
-			else if(e2 && e3)
-			{
-				t2 = (y-y2)/(y3-y2) * (z3-z2) + z1;
-				t3 = (y-y2)/(y3-y2) * (z3-z2) + z1;
-				z = t2 > t3 ? t2 : t3;
-			}
-			else if(e1 && e3)
-			{
-				t1 = (y-y1)/(y2-y1) * (z2-z1) + z1;
-				t3 = (y-y2)/(y3-y2) * (z3-z2) + z1;
-				z = t1 > t3 ? t1 : t3;
-			}
-			else
-			{
-				float inf = std::numeric_limits<float>::infinity();
-				t1 = -inf, t2 = -inf, t3 = -inf;
-				bool found = false;
-			       	if((x1 < x2 && x >= x1 && x <=x2) || (x1 > x2 && x <= x1 && x >= x2))
-				{
-					t1 = (x-x1)/(x2-x1) * (z2-z1) + z1;
-					found = true;
-				}
-				if((x2 < x3 && x >= x2 && x <=x3) || (x2 > x3 && x <= x2 && x >= x3))
-				{
-					t2 = (x-x2)/(x3-x2) * (z3-z2) + z1;
-					found = true;
-				}
-				if((x1 < x3 && x >= x1 && x <=x3) || (x1 > x3 && x <= x1 && x >= x3))
-				{
-					t3 = (x-x2)/(x3-x2) * (z3-z2) + z1;
-					found = true;
-				}
-				
-				if(found)
-				{
-					z = t1 > t2 ? t1 : t2;
-					z = z > t3 ? z : t3;
-				}else{
-					z = z1 > z2 ? z1 : z2;
-					z = z > z3 ? z : z3;
-				}
-			}
-					
-
+			z = z1 > z2 ? z1 : z2;
+			z = z > z3 ? z : z3;
 		}
 		thrust::get<5>(t)  = thrust::pair(x, y);
 		thrust::get<6>(t) = z;
@@ -349,53 +206,7 @@ struct colCount
 		minY = minY < y3 ? minY : y3;
 		float y = ceil(minY) + row;
 		float end1, end2;
-		float ed1, ed2, ed3;
-		bool e1 = false, e2 = false, e3 = false;
-		if((y1 < y2 && y >= y1 && y <= y2) || (y1 > y2 && y >= y2 && y <= y1)) 
-		{
-			ed1 = (y - y1) * (x2-x1) / (y2-y1) + x1;
-			e1 = true;
-		}
-		if((y2 < y3 && y >= y2 && row <= y3) || (y2 > y3 && y >= y3 && y <= y2)) 
-		{
-			ed2 = (y - y2) * (x3-x2) / (y3-y2) + x2;
-			e2 = true;
-		}
-		if((y1 < y3 && y >= y1 && y <= y3) || (y1 > y3 && y >= y3 && y <= y1)) 
-		{
-			ed3 = (y - y1) * (x3-x1) / (y3-y1) + x1;
-			e3 = true;
-		}
-
-		if(y1 == y2 && y2 == y3 && y3 == y)
-		{
-			end1 = x1 < x2 ? x1 : x2;
-			end1 = end1 < x3 ? end1 : x3;
-			end2 = x1 < x2 ? x2 : x1;
-			end2 = end2 < x3 ? x3 : end2;
-		}
-		else if(e1 && e2 && e3)
-		{
-			end1 = ed1 < ed2 ? ed1 : ed2;
-			end1 = end1 < ed3 ? end1 : ed3;
-			end2 = ed1 < ed2 ? ed2 : ed1;
-			end2 = end2 < ed3 ? ed3 : end2;
-		}
-		else if (e1 && e2)
-		{
-			end1 = ed1 < ed2 ? ed1 : ed2;
-			end2 = ed1 < ed2 ? ed2 : ed1;
-		}
-		else if(e2 && e3)
-		{
-			end1 = ed2 < ed3 ? ed2 : ed3;
-			end2 = ed2 < ed3 ? ed3 : ed2;
-		}
-		else if(e1 && e3)
-		{
-			end1 = ed1 < ed3 ? ed1 : ed3;
-			end2 = ed1 < ed3 ? ed3 : ed1;
-		}
+		getEnds(x1,y1,x2,y2,x3,y3,y,end1,end2);
 		thrust::get<4>(t) = floor(end2) - ceil(end1) + 1;
 	}
 };
