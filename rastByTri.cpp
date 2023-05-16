@@ -91,7 +91,7 @@ struct fragCount
 				end2 = ed1 < ed3 ? ed3 : ed1;
 			}
 			
-			frags += floor(end2) - ceil(end1);
+			frags += ceil(end2) - ceil(end1);
 		}
 
 		thrust::get<3>(t) = frags;
@@ -187,7 +187,7 @@ struct rowCount
 		y3 = thrust::get<1>(thrust::get<2>(t)); 
 		float minY = y1 < y2 ? y1 : (y2 < y3 ? y2 : y3); 
 		float maxY = y1 > y2 ? y1 : (y2 > y3 ? y2 : y3); 
-		thrust::get<3>(t) = floor(maxY) - ceil(minY); 
+		thrust::get<3>(t) = ceil(maxY) - ceil(minY); 
 	}
 };
 
@@ -249,11 +249,7 @@ struct colCount
 			end1 = ed1 < ed3 ? ed1 : ed3;
 			end2 = ed1 < ed3 ? ed3 : ed1;
 		}
-		if(floor(end2) < ceil(end1)){
-			thrust::get<4>(t) = 0;
-		}else{	
-			thrust::get<4>(t) = floor(end2) - ceil(end1);
-		}
+		thrust::get<4>(t) = ceil(end2) - ceil(end1);
 	}
 };
 
