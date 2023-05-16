@@ -1,5 +1,6 @@
 #include <iostream>
 #include <cmath>
+#include <cassert>
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -41,8 +42,10 @@ struct fragCount
 		y2 = thrust::get<1>(thrust::get<1>(t));
 		x3 = thrust::get<0>(thrust::get<2>(t));
 		y3 = thrust::get<1>(thrust::get<2>(t));
-		float minY = y1 < y2 ? y1 : (y2 < y3 ? y2 : y3);
-		float maxY = y1 > y2 ? y1 : (y2 > y3 ? y2 : y3);
+		float minY = y1 < y2 ? y1 : y2;
+		minY = minY < y3 ? minY : y3;
+		float maxY = y1 > y2 ? y1 : y2;
+		maxY = maxY > y3 ? maxY : y3;
 		int low = ceil(minY);
 		int high = floor(maxY);
 		int frags = 0;
@@ -70,10 +73,10 @@ struct fragCount
 			
 			if(e1 && e2 && e3)
 			{
-				float eq = ed1 == ed2 ? ed1 : ed3;
-				float neq = ed1 == ed2 ? ed3 : ed1;
-				end1 = eq < neq ? eq : neq;
-				end2 = eq < neq ? neq : eq;
+				end1 = ed1 < ed2 ? ed1 : ed2;
+				end1 = end1 < ed3 ? end1 : ed3;
+				end2 = ed1 < ed2 ? ed2 : ed1;
+				end2 = end2 < ed3 ? ed3 : end2;
 			}
 			else if (e1 && e2)
 			{
@@ -91,7 +94,7 @@ struct fragCount
 				end2 = ed1 < ed3 ? ed3 : ed1;
 			}
 			
-			frags += ceil(end2) - ceil(end1);
+			frags += floor(end2) - ceil(end1) + 1;
 		}
 
 		thrust::get<3>(t) = frags;
@@ -127,7 +130,8 @@ struct rasterize
 		float x_coe = ((y2-y1)*(z3-z1)-(y3-y1)*(z2-z1));
 		float y_coe = ((x2-x1)*(z3-z1)-(x3-x1)*(z2-z1));
 		float z_coe = ((x2-x1)*(y3-y1)-(x3-x1)*(y2-y1));
-		float minY = y1 < y2 ? y1 : (y2 < y3 ? y2 : y3);
+		float minY = y1 < y2 ? y1 : y2;
+		minY = minY < y3 ? minY : y3;
 		float y = ceil(minY) + thrust::get<3>(t);
 		float ed1, ed2, ed3;
 		bool e1 = false, e2 = false, e3 = false;
@@ -151,9 +155,8 @@ struct rasterize
 		
 		if(e1 && e2 && e3)
 		{
-			float eq = ed1 == ed2 ? ed1 : ed3;
-			float neq = ed1 == ed2 ? ed3 : ed1;
-			end1 = eq < neq ? eq : neq;
+			end1 = ed1 < ed2 ? ed1 : ed2;
+			end1 = end1 < ed3 ? end1 : ed3;
 		}
 		else if (e1 && e2)
 		{
@@ -185,9 +188,11 @@ struct rowCount
 		y1 = thrust::get<1>(thrust::get<0>(t));
 		y2 = thrust::get<1>(thrust::get<1>(t));
 		y3 = thrust::get<1>(thrust::get<2>(t)); 
-		float minY = y1 < y2 ? y1 : (y2 < y3 ? y2 : y3); 
-		float maxY = y1 > y2 ? y1 : (y2 > y3 ? y2 : y3); 
-		thrust::get<3>(t) = ceil(maxY) - ceil(minY); 
+		float minY = y1 < y2 ? y1 : y2; 
+		minY = minY < y3 ? minY : y3;
+		float maxY = y1 > y2 ? y1 : y2; 
+		maxY = maxY > y3 ? maxY : y3;
+		thrust::get<3>(t) = floor(maxY) - ceil(minY) + 1; 
 	}
 };
 
@@ -229,10 +234,12 @@ struct colCount
 		float end1, end2;
 		if(e1 && e2 && e3)
 		{
-			float eq = ed1 == ed2 ? ed1 : ed3;
-			float neq = ed1 == ed2 ? ed3 : ed1;
-			end1 = eq < neq ? eq : neq;
-			end2 = eq < neq ? neq : eq;
+			std::cout << "3 intercept! " << y << std::endl;
+			std::cout << ed1 << ", " << ed2 << ", " << ed3 << std::endl;
+			end1 = ed1 < ed2 ? ed1 : ed2;
+			end1 = end1 < ed3 ? end1 : ed3;
+			end2 = ed1 < ed2 ? ed2 : ed1;
+			end2 = end2 < ed3 ? ed3 : end2;
 		}
 		else if (e1 && e2)
 		{
@@ -249,7 +256,7 @@ struct colCount
 			end1 = ed1 < ed3 ? ed1 : ed3;
 			end2 = ed1 < ed3 ? ed3 : ed1;
 		}
-		thrust::get<4>(t) = ceil(end2) - ceil(end1);
+		thrust::get<4>(t) = floor(end2) - ceil(end1) + 1;
 	}
 };
 
@@ -490,7 +497,9 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #if DEBUG > 2 
 	std::cout << "Column offsets by row" << std::endl;
 	print_int_vec(col_off.begin(), col_off.end());
+	std::cout << "Number of columns " <<  col_off[num_rows-1] + col_count[num_rows-1] << std::endl;
 #endif
+	assert((fragments == (int)col_off[num_rows-1] + (int)col_count[num_rows-1]));
 	thrust::device_vector<int> frag_row(fragments);
 
 	expand_int(col_off.begin(), col_count.begin(), frag_row.begin(), frag_row.end(), num_rows);
