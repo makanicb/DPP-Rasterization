@@ -3,3 +3,4 @@ pnmtopng
 *.pnm
 *.png
 *.o
+*.tri
