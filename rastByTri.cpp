@@ -24,6 +24,10 @@
 #include "imageWriter.h"
 #include "rastByTri.h"
 
+#ifndef DEBUG
+#define DEBUG 0 
+#endif
+
 struct fragCount
 {
 	template <typename Tuple>
@@ -180,10 +184,10 @@ struct rowCount
 		float y1, y2, y3;
 		y1 = thrust::get<1>(thrust::get<0>(t));
 		y2 = thrust::get<1>(thrust::get<1>(t));
-		y3 = thrust::get<1>(thrust::get<2>(t));
-		float minY = y1 < y2 ? y1 : (y2 < y3 ? y2 : y3);
-		float maxY = y1 > y2 ? y1 : (y2 > y3 ? y2 : y3);
-		thrust::get<3>(t) = floor(maxY) - ceil(minY);
+		y3 = thrust::get<1>(thrust::get<2>(t)); 
+		float minY = y1 < y2 ? y1 : (y2 < y3 ? y2 : y3); 
+		float maxY = y1 > y2 ? y1 : (y2 > y3 ? y2 : y3); 
+		thrust::get<3>(t) = floor(maxY) - ceil(minY); 
 	}
 };
 
@@ -229,25 +233,21 @@ struct colCount
 			float neq = ed1 == ed2 ? ed3 : ed1;
 			end1 = eq < neq ? eq : neq;
 			end2 = eq < neq ? neq : eq;
-			std::cout << y << "a" << std::endl;
 		}
 		else if (e1 && e2)
 		{
 			end1 = ed1 < ed2 ? ed1 : ed2;
 			end2 = ed1 < ed2 ? ed2 : ed1;
-			std::cout << y << "b" << std::endl;
 		}
 		else if(e2 && e3)
 		{
 			end1 = ed2 < ed3 ? ed2 : ed3;
 			end2 = ed2 < ed3 ? ed3 : ed2;
-			std::cout << y << "c" << std::endl;
 		}
 		else if(e1 && e3)
 		{
 			end1 = ed1 < ed3 ? ed1 : ed3;
 			end2 = ed1 < ed3 ? ed3 : ed1;
-			std::cout << y << "d" << std::endl;
 		}
 		if(floor(end2) < ceil(end1)){
 			thrust::get<4>(t) = 0;
@@ -367,32 +367,44 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		thrust::device_vector<thrust::tuple<char, char, char>> &color,
 		int numTri, int width, int height, Image &final_image)
 {
-		
+#if DEBUG > 0
+	std::cout << "Count fragments" << std::endl;
+#endif
+#if DEBUG > 1 
+	std::cout << numTri << " Triangles" << std::endl;
+#endif	
 	thrust::device_vector<int> frags(numTri);
 
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), frags.begin())),
 			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), frags.end())),
 			 fragCount());
+#if DEBUG > 1 
 	std::cout << "# frags by triange: " << std::endl;
 	print_int_vec(frags.begin(), frags.end());
+#endif
 
 	thrust::device_vector<int> write_index(numTri);
 
 	thrust::exclusive_scan(frags.begin(), frags.end(), write_index.begin());
-
+#if DEBUG > 1
 	std::cout << "write position by triange: " << std::endl;
 	print_int_vec(write_index.begin(), write_index.end());
+#endif
 
 	int fragments = write_index[numTri-1] + frags[numTri-1];
-	
+#if DEBUG > 1	
 	std::cout << "Number of fragments: " << fragments << std::endl;
-
-	std::cout << "get fragments" << std::endl;
+#endif
+#if DEBUG > 0
+	std::cout << "Get fragments" << std::endl;
+#endif
 
 	thrust::device_vector<int> frag_tri(fragments);
 	expand_int(write_index.begin(), frags.begin(), frag_tri.begin(), frag_tri.end(), numTri);
+#if DEBUG > 3
 	std::cout << "Which triangle does each fragment belong to?" << std::endl;
 	print_int_vec(frag_tri.begin(), frag_tri.end());
+#endif
 /*
 	thrust::scatter_if
 		(thrust::counting_iterator<int>(0),
@@ -419,36 +431,41 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), rows.begin())),
 			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), rows.end())),
 			 rowCount());
-	
+#if DEBUG > 1
 	std::cout << "How many rows does each triangle have?" << std::endl;
 	for(int i = 0; i < numTri; i++)
 		std::cout << rows[i] << " ";
 	std::cout << std::endl;
+#endif
 
 	thrust::device_vector<int> row_off(numTri);
 	thrust::exclusive_scan(rows.begin(), rows.end(), row_off.begin());
+#if DEBUG > 1
 	std::cout << "What is the row offset of each triangle?" << std::endl;
 	for(int i = 0; i < numTri; i++)
 		std::cout << row_off[i] << " ";
 	std::cout << std::endl;
+#endif
 
 	int num_rows = row_off[numTri-1] + rows[numTri-1];
 
 	thrust::device_vector<int> tri_ptr(num_rows);
 	
 	expand_int(row_off.begin(), rows.begin(), tri_ptr.begin(), tri_ptr.end(), numTri);
-
+#if DEBUG > 2 
 	std::cout << "What triangle does each row belong to?" << std::endl;
 	for(int i = 0; i < num_rows; i++)
 		std::cout << tri_ptr[i] << " ";
 	std::cout << std::endl;	
+#endif
 
 	thrust::device_vector<int> row_ptr(num_rows);
 
 	index_int(tri_ptr.begin(), row_off.begin(), row_ptr.begin(), num_rows);
-	
+#if DEBUG > 2 
 	std::cout << "The index of each row." << std::endl;
 	print_int_vec(row_ptr.begin(), row_ptr.end());
+#endif
 
 	thrust::device_vector<int> col_count(num_rows);
 
@@ -466,17 +483,18 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 			 row_ptr.end(),
 			 col_count.end())),
 		colCount());
-
+#if DEBUG > 2
 	std::cout << "How many columns does each row have?" << std::endl;
 	print_int_vec(col_count.begin(), col_count.end());
+#endif
 
 	thrust::device_vector<int> col_off(num_rows);
 
 	thrust::exclusive_scan(col_count.begin(), col_count.end(), col_off.begin());
-
+#if DEBUG > 2 
 	std::cout << "Column offsets by row" << std::endl;
 	print_int_vec(col_off.begin(), col_off.end());
-
+#endif
 	thrust::device_vector<int> frag_row(fragments);
 
 	expand_int(col_off.begin(), col_count.begin(), frag_row.begin(), frag_row.end(), num_rows);
@@ -492,10 +510,11 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		 thrust::make_permutation_iterator(row_off.begin(), frag_tri.begin()),
 		 frag_row.begin(),
 		 thrust::minus<int>());
-
+#if DEBUG > 3 
 	std::cout << "Frag positions by row and column in every triangle." << std::endl;
 	print_int_vec(frag_row.begin(), frag_row.end());
 	print_int_vec(frag_col.begin(), frag_col.end());
+#endif
 
 	thrust::device_vector<thrust::pair<int,int>> pos(fragments);
 	thrust::device_vector<float> depth(fragments);
@@ -514,17 +533,19 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 				thrust::make_permutation_iterator(p3.begin(), frag_tri.end()),
 				frag_row.end(), frag_col.end(), pos.end(), depth.end())),
 		rasterize());
-
+#if DEBUG > 3
 	std::cout << "Position and depth of fragments" << std::endl;
 	print_pair_vec(pos.begin(), pos.end());
 	print_float_vec(depth.begin(), depth.end());
+#endif
 
 	thrust::device_vector<thrust::tuple<char,char,char>> frag_colors(fragments);
 	thrust::gather(frag_tri.begin(), frag_tri.end(), color.begin(), frag_colors.begin());
-	
+#if DEBUG > 0	
 	std::cout << "find fragments to write" << std::endl;
 
 	std::cout << "\tcopy position" << std::endl;
+#endif
 	thrust::device_vector<thrust::pair<int,int>> cpos(fragments);
 	thrust::device_vector<float> cdepth(fragments);
 	thrust::device_vector<thrust::tuple<char,char,char>> cfrag_colors(fragments);
@@ -532,25 +553,30 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::sequence(sorted_inds.begin(), sorted_inds.end());
 
 	thrust::copy(pos.begin(), pos.end(), cpos.begin());
-
+#if DEBUG > 0
 	std::cout << "\tsort fragments" << std::endl;
-
-	//std::cout << "Sorted" << std::endl;
+#endif
 	thrust::sort_by_key(cpos.begin(), cpos.end(), sorted_inds.begin());
 	thrust::gather(sorted_inds.begin(), sorted_inds.end(), frag_colors.begin(), cfrag_colors.begin());
 	thrust::gather(sorted_inds.begin(), sorted_inds.end(), depth.begin(), cdepth.begin());
-	//print_pair_vec(cpos.begin(), cpos.end());
-	//print_int_vec(sorted_inds.begin(), sorted_inds.end());
-	//print_float_vec(cdepth.begin(), cdepth.end());
-
+#if DEBUG > 3
+	std::cout << "Sorted" << std::endl;
+	print_pair_vec(cpos.begin(), cpos.end());
+	print_int_vec(sorted_inds.begin(), sorted_inds.end());
+	print_float_vec(cdepth.begin(), cdepth.end());
+#endif
+#if DEBUG > 0
 	std::cout << "\tget fragments at lowest depth" << std::endl;
+#endif
 	int unique_positions;
 	{
 		thrust::device_vector<thrust::pair<int,int>> tmp_pos(fragments);
 		auto tmp_pos_end = thrust::unique_copy(cpos.begin(), cpos.end(), tmp_pos.begin());
 		unique_positions = (int)(tmp_pos_end - tmp_pos.begin());
 	}
-	std::cout << "unique positions = " << unique_positions << std::endl;
+#if DEBUG > 1
+	std::cout << "\tunique positions = " << unique_positions << std::endl;
+#endif
 	thrust::device_vector<thrust::pair<int,int>> true_fragments(unique_positions);
 	thrust::device_vector<float> min_depth(unique_positions);
 	thrust::device_vector<int> pos_count(unique_positions);
@@ -558,17 +584,31 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 			min_depth.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::maximum<float>());
 	thrust::reduce_by_key(cpos.begin(), cpos.end(), thrust::make_constant_iterator<int>(1), thrust::make_discard_iterator(), 
 			pos_count.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::plus<int>());
-	//print_int_vec(pos_count.begin(), pos_count.end());
-	std::cout << "\tfor each position, get the shallowest depth of a fragment at that position" << std::endl;
+#if DEBUG > 3
+	std::cout << "Number of duplicates at each unique position" << std::endl;
+	print_int_vec(pos_count.begin(), pos_count.end());
+#endif
+#if DEBUG > 0
+	std::cout << "\tGet the minimum depth of each unique position" << std::endl;
+#endif
 	thrust::device_vector<int> pos_start_ind(unique_positions);
 	thrust::exclusive_scan(pos_count.begin(), pos_count.end(), pos_start_ind.begin());
-	//print_int_vec(pos_start_ind.begin(), pos_start_ind.end());
+#if DEBUG > 3
+	std::cout << "Offset by unique position" << std::endl;
+	print_int_vec(pos_start_ind.begin(), pos_start_ind.end());
+#endif
 	thrust::device_vector<int> depth_map(fragments);
 	expand_int(pos_start_ind.begin(), pos_count.begin(), depth_map.begin(), depth_map.end(), unique_positions);
-	//print_int_vec(depth_map.begin(), depth_map.end());
+#if DEBUG > 3
+	std::cout << "Min depth gather position by fragment" << std::endl;
+	print_int_vec(depth_map.begin(), depth_map.end());
+#endif
 	thrust::device_vector<float> exp_min_depth(fragments);
 	thrust::gather(depth_map.begin(), depth_map.end(), min_depth.begin(), exp_min_depth.begin());
-	//print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
+#if DEBUG > 3
+	std::cout << "Min depth by fragment" << std::endl;
+	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
+#endif
 /*
 	//std::cout << "Min depth" << std::endl;
 	//print_pair_vec(true_fragments.begin(), true_fragments.end());
@@ -588,23 +628,32 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::device_vector<float> min_depth_by_fragment(fragments);
 	thrust::gather(find_real.begin(), find_real.end(), min_depth.begin(), min_depth_by_fragment.begin());
 */
-	//std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
-	//print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
-	//print_float_vec(cdepth.begin(), cdepth.end());
-
+#if DEBUG > 3
+	std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
+	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
+	print_float_vec(cdepth.begin(), cdepth.end());
+#endif
+#if DEBUG > 0
 	std::cout << "\tchoose fragments to write" << std::endl;
+#endif
 	thrust::device_vector<bool> write_frag(fragments);
 	thrust::transform(exp_min_depth.begin(), exp_min_depth.end(), cdepth.begin(), write_frag.begin(), thrust::equal_to<float>());
-	//std::cout << "Write fragment?" << std::endl;
-	//for(int i = 0; i < fragments; i++)
-	//	std::cout << write_frag[i] << " ";
-	//std::cout << std::endl;
-
+#if DEBUG > 3
+	std::cout << "Write fragment?" << std::endl;
+	for(int i = 0; i < fragments; i++)
+		std::cout << write_frag[i] << " ";
+	std::cout << std::endl;
+#endif
+#if DEBUG > 0
 	std::cout << "write fragments" << std::endl;
+#endif
 
 	thrust::device_vector<int> rowMajorPos(fragments);
 	thrust::transform(cpos.begin(), cpos.end(), rowMajorPos.begin(), toRowMajor(width));
-	//print_int_vec(rowMajorPos.begin(), rowMajorPos.end());
+#if DEBUG > 3
+	std::cout << "Row major position by fragment" << std::endl;
+	print_int_vec(rowMajorPos.begin(), rowMajorPos.end());
+#endif
 
 	thrust::device_vector<thrust::tuple<char,char,char>> img(width * height);
 	thrust::fill(img.begin(), img.end(), thrust::make_tuple<char,char,char>(255,255,255));

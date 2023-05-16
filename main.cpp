@@ -9,6 +9,9 @@
 #include "imageWriter.h"
 #define WIDTH 300
 #define HEIGHT 300
+#ifndef DEBUG
+#define DEBUG 0
+#endif
 
 void parseTriPair(const std::string &str, float &v1, float &v2, float &v3)
 {
@@ -26,21 +29,21 @@ void parseTriPair(const std::string &str, float &v1, float &v2, float &v3)
 	std::cout << std::endl;*/
 	if(!(ss >> v1))
 	{
-		std::cout << "Could not parse values from triangle input file to integers" << std::endl;
+		std::cerr << "Could not parse values from triangle input file to integers" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	if(ss.peek() == ',')
 		ss.ignore();
 	if(!(ss >> v2))
 	{
-		std::cout << "Could not parse values from triangle input file to integers" << std::endl;
+		std::cerr << "Could not parse values from triangle input file to integers" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	if(ss.peek() == ',')
 		ss.ignore();
 	if(!(ss >> v3))
 	{
-		std::cout << "Could not parse values from triangle input file to integers" << std::endl;
+		std::cerr << "Could not parse values from triangle input file to integers" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 }
@@ -61,7 +64,7 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	p2.resize(numTri);
 	p3.resize(numTri);
 	color.resize(numTri);
-	std::cout << numTri << " Triangles" << std::endl;
+	//std::cout << numTri << " Triangles" << std::endl;
 	for(int i = 0; i < numTri; i++)
 	{
 		if(!getline(fin, l1) || !getline(fin, l2) || !getline(fin, l3) || !getline(fin, l4))
@@ -96,10 +99,12 @@ int main(int argc, char **argv)
 {
 	if(argc < 3)
 	{
-		std::cout << "USAGE: rast <input> <output> " << std::endl;
+		std::cerr << "USAGE: rast <input> <output> " << std::endl;
 		exit(EXIT_FAILURE);
 	}
+#if DEBUG > 0
 	std::cout << "initialize triangles" << std::endl;
+#endif
 	thrust::device_vector<thrust::tuple<float, float, float>> p1;
 	thrust::device_vector<thrust::tuple<float, float, float>> p2;
 	thrust::device_vector<thrust::tuple<float, float, float>> p3;
