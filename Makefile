@@ -12,7 +12,8 @@
 
 source = $(wildcard *.cpp)
 objects = $(addsuffix .o, $(basename $(source)))
-flags = -g -W -Wall -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP -DDEBUG=0
+flags = -g -W -Wall -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP -DDEBUG=0 
+#flags = -g -W -Wall -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP -DDEBUG=0 -I/packages/cuda/9.2/include/
 target = rast
 
 $(target) : $(objects)

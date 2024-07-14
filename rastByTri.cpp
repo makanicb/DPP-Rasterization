@@ -165,7 +165,7 @@ struct rasterize
 			z = z1 > z2 ? z1 : z2;
 			z = z > z3 ? z : z3;
 		}
-		thrust::get<5>(t)  = thrust::pair(x, y);
+		thrust::get<5>(t) = thrust::make_pair(x, y);
 		thrust::get<6>(t) = z;
 	}
 };
