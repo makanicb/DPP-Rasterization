@@ -2,6 +2,7 @@
 #include <cmath>
 #include <cassert>
 #include <limits>
+#include <chrono>
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -165,7 +166,7 @@ struct rasterize
 			z = z1 > z2 ? z1 : z2;
 			z = z > z3 ? z : z3;
 		}
-		thrust::get<5>(t)  = thrust::pair(x, y);
+		thrust::get<5>(t)  = thrust::make_pair(x, y);
 		thrust::get<6>(t) = z;
 	}
 };
@@ -321,6 +322,10 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		thrust::device_vector<thrust::tuple<char, char, char>> &color,
 		int numTri, int width, int height, Image &final_image)
 {
+	//Set up timing systems
+	thrust::host_vector<std::chrono::time_point<std::chrono::high_resolution_clock>> timer;
+	//time: function start
+	timer.push_back(std::chrono::high_resolution_clock::now());	
 #if DEBUG > 0
 	std::cout << "Count fragments" << std::endl;
 #endif
@@ -497,6 +502,8 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 
 	thrust::device_vector<thrust::tuple<char,char,char>> frag_colors(fragments);
 	thrust::gather(frag_tri.begin(), frag_tri.end(), color.begin(), frag_colors.begin());
+	//time: rasterized triangles. acquired all fragments
+	timer.push_back(std::chrono::high_resolution_clock::now());
 #if DEBUG > 0	
 	std::cout << "find fragments to write" << std::endl;
 
@@ -521,6 +528,8 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	print_int_vec(sorted_inds.begin(), sorted_inds.end());
 	print_float_vec(cdepth.begin(), cdepth.end());
 #endif
+	//time: sorted fragments
+	timer.push_back(std::chrono::high_resolution_clock::now());
 #if DEBUG > 0
 	std::cout << "\tget fragments at lowest depth" << std::endl;
 #endif
@@ -600,6 +609,8 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		std::cout << write_frag[i] << " ";
 	std::cout << std::endl;
 #endif
+	//time: got visible fragments
+	timer.push_back(std::chrono::high_resolution_clock::now());
 #if DEBUG > 0
 	std::cout << "write fragments" << std::endl;
 #endif
@@ -625,9 +636,19 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		final_image.data[count++] = thrust::get<1>(t);
 		final_image.data[count++] = thrust::get<2>(t);
 	}
+	//time: write final image to output
+	timer.push_back(std::chrono::high_resolution_clock::now());
 	//char *col = final_image.data;
 	//for(int i = 0; i < 60; i+=3)
 	//{
 	//	std::cout<<(int)col[i]<<","<<(int)col[i+1]<<","<<(int)col[i+2]<<std::endl;
 	//}
+	auto p = timer.begin();
+	for(auto i = timer.begin() + 1; i != timer.end(); i++)
+	{
+		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(*i - *p);
+		p = i;
+		std::cout << duration.count() << "\t";	
+	}
+	std::cout << std::endl;
 }
