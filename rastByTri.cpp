@@ -648,7 +648,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	{
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(*i - *p);
 		p = i;
-		std::cout << duration.count() << "\t";	
+		std::cout << "\t" << duration.count();	
 	}
 	std::cout << std::endl;
 }
