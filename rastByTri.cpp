@@ -31,6 +31,7 @@
 #define DEBUG 0 
 #endif
 
+__host__ __device__
 void getEnds(float x1, float y1, float x2, float y2, float x3, float y3, float y, float &end1, float &end2)
 {
 		float ed1, ed2, ed3;
