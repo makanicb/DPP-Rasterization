@@ -10,16 +10,18 @@
 #main.o : main.cpp 
 #	g++ -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP -c -o $@ $<
 
+CC = /packages/cuda/11.5.1/bin/nvcc 
 source = $(wildcard *.cpp)
 objects = $(addsuffix .o, $(basename $(source)))
-flags = -O3 -W -Wall -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP -DDEBUG=0
+#flags = --x cu -O3 -W -Wall -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA -DDEBUG=0
+flags = --x cu -O3 -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA -DDEBUG=0
 target = rast
 
 $(target) : $(objects)
-	g++ $(flags) -o $(target) $(objects)
+	$(CC) $(flags) -o $(target) $(objects)
 
 %.o : %.cpp
-	g++ $(flags) -c $< -o $@
+	$(CC) $(flags) -c $< -o $@
 
 clean :
 	rm $(target) $(wildcard *.o)
