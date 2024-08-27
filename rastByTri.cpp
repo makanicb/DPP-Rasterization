@@ -622,8 +622,8 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	print_int_vec(rowMajorPos.begin(), rowMajorPos.end());
 #endif
 
-	thrust::device_vector<thrust::tuple<char,char,char>> img(width * height);
-	thrust::fill(img.begin(), img.end(), thrust::make_tuple<char,char,char>(255,255,255));
+	thrust::device_vector<thrust::tuple<unsigned char,unsigned char,unsigned char>> img(width * height);
+	thrust::fill(img.begin(), img.end(), thrust::make_tuple<unsigned char,unsigned char,unsigned char>(255,255,255));
 	thrust::scatter_if(cfrag_colors.begin(), cfrag_colors.end(), rowMajorPos.begin(), write_frag.begin(), img.begin());
 
 	thrust::host_vector<thrust::tuple<char,char,char>> h_img = img;
