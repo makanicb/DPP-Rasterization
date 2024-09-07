@@ -4,3 +4,4 @@ pnmtopng
 *.png
 *.o
 *.tri
+data/
