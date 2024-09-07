@@ -5,3 +5,4 @@ pnmtopng
 *.o
 *.tri
 data/
+rast
