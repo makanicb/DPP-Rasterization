@@ -14,7 +14,7 @@ CC = /packages/cuda/11.5.1/bin/nvcc
 source = $(wildcard *.cu)
 objects = $(addsuffix .o, $(basename $(source)))
 #flags = --x cu -O3 -W -Wall -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA -DDEBUG=0
-flags = -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA -DDEBUG=0
+flags = -g -G -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA -DDEBUG=0
 target = rast
 
 $(target) : $(objects)
