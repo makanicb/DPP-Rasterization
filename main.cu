@@ -54,6 +54,7 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		thrust::device_vector<thrust::tuple<char,char,char>> &color,
 		int &numTri, char *filename)
 {
+	std::cout << "Start Read Triangles" << std::endl;
 	std::ifstream fin(filename);
 	std::stringstream ss;
 	std::string l1, l2, l3, l4;
@@ -64,9 +65,11 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	p2.resize(numTri);
 	p3.resize(numTri);
 	color.resize(numTri);
-	//std::cout << numTri << " Triangles" << std::endl;
+	std::cout << numTri << " Triangles" << std::endl;
 	for(int i = 0; i < numTri; i++)
 	{
+		if(i % 10000 == 0)
+			std::cout << "Parsing Triangle " << i << std::endl;
 		if(!getline(fin, l1) || !getline(fin, l2) || !getline(fin, l3) || !getline(fin, l4))
 		{
 			std::cout<<"Not enough values in "<<filename<<" for "<<numTri<<" triangles!" <<std::endl;
@@ -124,13 +127,21 @@ int main(int argc, char **argv)
 	color[1] = thrust::make_tuple(0,0,255);
 	//color[2] = thrust::make_tuple(0,255,0);*/
 
+	std::cout << "Start Main" << std::endl;
+
 	int numTri;
 	readTriangles(p1, p2, p3, color, numTri, argv[1]);
+
+	std::cout << "Finished Read Triangles" << std::endl;
 
 	Image final_image;
 	initImage(&final_image, WIDTH, HEIGHT);
 
+	std::cout << "Finished Initialize Image" << std::endl;
+
 	RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image);
+
+	std::cout << "Finished Rasterize Triangles" << std::endl;
 
 	writeImage(&final_image, argv[2]);
 	//char *col = final_image.data;
@@ -138,6 +149,10 @@ int main(int argc, char **argv)
 	//{
 	//	std::cout<<(int)col[i]<<","<<(int)col[i+1]<<","<<(int)col[i+2]<<std::endl;
 	//}
+
+	std::cout << "Finished Write Image" << std::endl;
 		
 	freeImage(&final_image);
+
+	std::cout << "Program End" << std::endl;
 }
