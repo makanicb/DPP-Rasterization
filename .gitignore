@@ -6,3 +6,4 @@ pnmtopng
 *.tri
 data/
 rast
+start_int_gpu.sh
