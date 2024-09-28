@@ -1,5 +1,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
+#include <thrust/copy.h>
+#include <thrust/iterator/zip_iterator.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -61,11 +63,31 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	getline(fin, l1);
 	ss << l1;
 	ss >> numTri;
+	//resize the output vectors
 	p1.resize(numTri);
 	p2.resize(numTri);
 	p3.resize(numTri);
 	color.resize(numTri);
+	//create reading vectors
+	//p1
+	thrust::device_vector<float> p11(numTri);
+	thrust::device_vector<float> p12(numTri);
+	thrust::device_vector<float> p13(numTri);
+	//p2
+	thrust::device_vector<float> p21(numTri);
+	thrust::device_vector<float> p22(numTri);
+	thrust::device_vector<float> p23(numTri);
+	//p3
+	thrust::device_vector<float> p31(numTri);
+	thrust::device_vector<float> p32(numTri);
+	thrust::device_vector<float> p33(numTri);
+	//color
+	thrust::device_vector<char> c1(numTri);
+	thrust::device_vector<char> c2(numTri);
+	thrust::device_vector<char> c3(numTri);
 	std::cout << numTri << " Triangles" << std::endl;
+	//parse file
+	//read contents into linear vectors
 	for(int i = 0; i < numTri; i++)
 	{
 		if(i % 10000 == 0)
@@ -79,22 +101,47 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		//std::cout << "color " << l1 << std::endl;
 		parseTriPair(l1, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
-		color[i] = thrust::make_tuple<char,char,char>((char)v1,(char)v2,(char)v3);
+		//color[i] = thrust::make_tuple<char,char,char>((char)v1,(char)v2,(char)v3);
+		c1[i] = char(v1);
+		c2[i] = char(v2);
+		c3[i] = char(v3);
 		//std::cout << "p1 " << l2 << std::endl;
 		parseTriPair(l2, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
-		p1[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
+		//p1[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
+		p11[i] = v1;
+		p12[i] = v2;
+		p13[i] = v3;
 		//std::cout << "p2 " << l3 << std::endl;
 		parseTriPair(l3, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
-		p2[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
+		//p2[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
+		p21[i] = v1;
+		p22[i] = v2;
+		p23[i] = v3;
 		//std::cout << "p3 " << l4 << std::endl;
 		parseTriPair(l4, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
-		p3[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
+		//p3[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
+		p31[i] = v1;
+		p32[i] = v2;
+		p33[i] = v3;
 
 	}
 	fin.close();
+
+	auto p1b = thrust::make_zip_iterator(thrust::make_tuple(p11.begin(), p12.begin(), p13.begin()));
+	auto p1e = thrust::make_zip_iterator(thrust::make_tuple(p11.end(), p12.end(), p13.end()));
+	thrust::copy(p1b, p1e, p1.begin());
+	auto p2b = thrust::make_zip_iterator(thrust::make_tuple(p21.begin(), p22.begin(), p23.begin()));
+	auto p2e = thrust::make_zip_iterator(thrust::make_tuple(p21.end(), p22.end(), p23.end()));
+	thrust::copy(p2b, p2e, p2.begin());
+	auto p3b = thrust::make_zip_iterator(thrust::make_tuple(p31.begin(), p32.begin(), p33.begin()));
+	auto p3e = thrust::make_zip_iterator(thrust::make_tuple(p31.end(), p32.end(), p33.end()));
+	thrust::copy(p3b, p3e, p3.begin());
+	auto cb = thrust::make_zip_iterator(thrust::make_tuple(c1.begin(), c2.begin(), c3.begin()));
+	auto ce = thrust::make_zip_iterator(thrust::make_tuple(c1.end(), c2.end(), c3.end()));
+	thrust::copy(cb, ce, color.begin());
 }
 	
 
