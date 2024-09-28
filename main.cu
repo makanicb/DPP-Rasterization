@@ -18,17 +18,18 @@
 void parseTriPair(const std::string &str, float &v1, float &v2, float &v3)
 {
 	//std::cout << "parsing " << str << std::endl;
-	std::stringstream ss;
+	/*std::stringstream ss;
 	ss << str;
 	//int tmp;
-	/*std::cout << "parsed ";
+	
+	std::cout << "parsed ";
 	for(; ss >> tmp;)
 	{
 		std::cout  << tmp << " ";
 		if(ss.peek() == ',')
 			ss.ignore();
 	}
-	std::cout << std::endl;*/
+	std::cout << std::endl;
 	if(!(ss >> v1))
 	{
 		std::cerr << "Could not parse values from triangle input file to integers" << std::endl;
@@ -47,7 +48,18 @@ void parseTriPair(const std::string &str, float &v1, float &v2, float &v3)
 	{
 		std::cerr << "Could not parse values from triangle input file to integers" << std::endl;
 		exit(EXIT_FAILURE);
-	}
+	}*/
+	char *temp_line = new char [str.length() + 1];
+	strcpy(temp_line, str.c_str());
+	char *tok = strtok(temp_line, ",");
+	//std::cout << tok << ",";
+	v1 = atoi(tok);
+	tok = strtok(NULL, ",");
+	//std::cout << tok << ",";
+	v2 = atoi(tok);
+	tok = strtok(NULL, ",");
+	//std::cout << tok << ",";
+	v3 = atoi(tok);
 }
 
 void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
