@@ -4,6 +4,7 @@ pnmtopng
 *.png
 *.o
 *.tri
+*.stl
 data/
 rast
 start_int_gpu.sh
