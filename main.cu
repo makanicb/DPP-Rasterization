@@ -82,28 +82,28 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	color.resize(numTri);
 	//create reading vectors
 	//p1
-	thrust::device_vector<float> p11(numTri);
-	thrust::device_vector<float> p12(numTri);
-	thrust::device_vector<float> p13(numTri);
+	thrust::host_vector<float> p11(numTri);
+	thrust::host_vector<float> p12(numTri);
+	thrust::host_vector<float> p13(numTri);
 	//p2
-	thrust::device_vector<float> p21(numTri);
-	thrust::device_vector<float> p22(numTri);
-	thrust::device_vector<float> p23(numTri);
+	thrust::host_vector<float> p21(numTri);
+	thrust::host_vector<float> p22(numTri);
+	thrust::host_vector<float> p23(numTri);
 	//p3
-	thrust::device_vector<float> p31(numTri);
-	thrust::device_vector<float> p32(numTri);
-	thrust::device_vector<float> p33(numTri);
+	thrust::host_vector<float> p31(numTri);
+	thrust::host_vector<float> p32(numTri);
+	thrust::host_vector<float> p33(numTri);
 	//color
-	thrust::device_vector<char> c1(numTri);
-	thrust::device_vector<char> c2(numTri);
-	thrust::device_vector<char> c3(numTri);
+	thrust::host_vector<char> c1(numTri);
+	thrust::host_vector<char> c2(numTri);
+	thrust::host_vector<char> c3(numTri);
 	std::cout << numTri << " Triangles" << std::endl;
 	//parse file
 	//read contents into linear vectors
 	for(int i = 0; i < numTri; i++)
 	{
-		if(i % 10000 == 0)
-			std::cout << "Parsing Triangle " << i << std::endl;
+		//if(i % 10000 == 0)
+			//std::cout << "Parsing Triangle " << i << std::endl;
 		if(!getline(fin, l1) || !getline(fin, l2) || !getline(fin, l3) || !getline(fin, l4))
 		{
 			std::cout<<"Not enough values in "<<filename<<" for "<<numTri<<" triangles!" <<std::endl;
