@@ -9,8 +9,6 @@
 #include <string>
 #include "rastByTri.h"
 #include "imageWriter.h"
-#define WIDTH 300
-#define HEIGHT 300
 #ifndef DEBUG
 #define DEBUG 0
 #endif
@@ -164,6 +162,11 @@ int main(int argc, char **argv)
 		std::cerr << "USAGE: rast <input> <output> " << std::endl;
 		exit(EXIT_FAILURE);
 	}
+
+	//create width and height variables
+	int WIDTH = 300;
+	int HEIGHT = 300;
+
 #if DEBUG > 0
 	std::cout << "initialize triangles" << std::endl;
 #endif
