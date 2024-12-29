@@ -168,7 +168,7 @@ unsigned int readTriFromBinarySTL(
 	return i;
 }
 
-int main(int argc, char **argv)
+/*int main(int argc, char **argv)
 {
 	readBinarySTL(argv[1]);
 	unsigned int numTri = getNumTriSTL(argv[1]);
@@ -183,4 +183,4 @@ int main(int argc, char **argv)
 		std::cout << temp[i].get<0>() << "\t";
 	std::cout << std::endl;
 	return 0;
-}
+}*/
