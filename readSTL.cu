@@ -121,7 +121,7 @@ unsigned int readTriFromBinarySTL(
 	thrust::device_vector<thrust::tuple<float,float,float>> &p2,
 	thrust::device_vector<thrust::tuple<float,float,float>> &p3,
 	thrust::device_vector<thrust::tuple<char,char,char>> &color,
-	char *filename)
+	char *filename, int &width, int &height)
 {
 	//get the number of triangles to read
 	unsigned int numTri = getNumTriSTL(filename);
@@ -142,7 +142,10 @@ unsigned int readTriFromBinarySTL(
 	float v2[3];
 	float v3[3];
 	short attr;
-	//iterate
+	//iterate over triangles for max and min values
+	//variables for tracking lowest values
+	int lowx = 0;
+	int lowy = 0;
 	for(; i < numTri; i++)
 	{
 		//read into buffers
@@ -152,9 +155,30 @@ unsigned int readTriFromBinarySTL(
 		fread(v3, 4, 3, f);
 		fread(&attr, 2, 1, f);
 		//process buffers
-		hp1[i] = thrust::make_tuple(v1[0], v1[1], v1[2]);
-		hp2[i] = thrust::make_tuple(v2[0], v2[1], v2[2]);
-		hp3[i] = thrust::make_tuple(v3[0], v3[1], v3[2]);
+		width = std::max(width, std::max((int) v1[0], std::max((int) v2[0], (int) v3[0])) + 1);
+		height = std::max(height, std::max((int) v1[1], std::max((int) v2[1], (int) v3[1])) + 1);
+		lowx = std::min(lowx, std::min((int) v1[0], std::min((int) v2[0], (int) v3[0])));
+		lowy = std::min(lowy, std::min((int) v1[1], std::min((int) v2[1], (int) v3[1])));
+	}
+	width -= lowx;
+	height -= lowy;
+
+	fseek(f, 0, SEEK_SET); //go back to the start of the file
+
+	//iterate over the triangles to read into triangle buffers
+
+	for(; i < numTri; i++)
+	{
+		//read into buffers
+		fread(norm, 4, 3, f);
+		fread(v1, 4, 3, f);
+		fread(v2, 4, 3, f);
+		fread(v3, 4, 3, f);
+		fread(&attr, 2, 1, f);
+		//process buffers
+		hp1[i] = thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]);
+		hp2[i] = thrust::make_tuple(v2[0] - lowx, v2[1] - lowy, v2[2]);
+		hp3[i] = thrust::make_tuple(v3[0] - lowx, v3[1] - lowy, v3[2]);
 		hcolor[i] = getColor(norm);
 	}
 

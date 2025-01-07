@@ -11,5 +11,5 @@ unsigned int readTriFromBinarySTL(
 		thrust::device_vector<thrust::tuple<float,float,float>> &p2,
 		thrust::device_vector<thrust::tuple<float,float,float>> &p3,
 		thrust::device_vector<thrust::tuple<char,char,char>> &color,
-		char *filename);
+		char *filename, int &width, int &height);
 #endif
