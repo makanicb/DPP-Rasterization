@@ -223,7 +223,9 @@ int main(int argc, char **argv)
 
 	std::cout << "Finished Read Triangles" << std::endl;
 	
-	std::cout << "width: " << WIDTH << "height: " << HEIGHT << std::endl;
+	std::cout << "width: " << WIDTH << " height: " << HEIGHT << std::endl;
+
+	std::cout << "Triangles: " << numTri << std::endl;
 
 	Image final_image;
 	initImage(&final_image, WIDTH, HEIGHT);

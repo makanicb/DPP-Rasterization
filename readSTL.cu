@@ -80,7 +80,6 @@ unsigned int getNumTriSTL(char *filename)
 	FILE *f = fopen(filename, "r");
 	//go to the end of the STL file header
 	fseek(f, 80, SEEK_SET);
-	std::cout << ftell(f) << std::endl;
 	//create a buffer to read the number of triangles into
 	unsigned int numTri = 0;
 	//read the number of triangles into the buffer
@@ -91,12 +90,21 @@ unsigned int getNumTriSTL(char *filename)
 	return numTri;
 }
 
-thrust::tuple<char,char,char> getColor(float* norm)
+int getColor(float* norm, thrust::tuple<char,char,char> &color)
 {
 	float light[3] = {0, 0, 1};
-	float dot = norm[0] * light[0] + norm[1] * light[1] + norm[2] * light[2];
-	dot = max(dot, 0.0);
-	return thrust::make_tuple((char)(255 * dot), (char)(255 * dot), (char)(255 * dot));
+	float mag = std::sqrt(norm[0] * norm[0] + norm[1] * norm[1] + norm[2] * norm[2]);
+	float dot = (norm[0] * light[0] + norm[1] * light[1] + norm[2] * light[2]) / mag;
+	dot = std::max(dot, 0.0f);
+	color = thrust::make_tuple((char)(255 * dot), (char)(255 * dot), (char)(255 * dot));
+	/*if(dot > 1)
+	{
+		std::cout << std::endl;
+		std::cout << norm[0] << ", " << norm[1] << ", " << norm[2] << std::endl;
+		std::cout << dot << ", " << mag << std::endl;
+	}*/
+	//std::cout << 255 * dot << ", " << (int) (255 * dot) << ", " << (int)(unsigned char)(char) (255 * dot) << std::endl;
+	return 0;
 }
 
 /*
@@ -167,7 +175,7 @@ unsigned int readTriFromBinarySTL(
 
 	//iterate over the triangles to read into triangle buffers
 
-	for(; i < numTri; i++)
+	for(i = 0; i < numTri; i++)
 	{
 		//read into buffers
 		fread(norm, 4, 3, f);
@@ -179,8 +187,9 @@ unsigned int readTriFromBinarySTL(
 		hp1[i] = thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]);
 		hp2[i] = thrust::make_tuple(v2[0] - lowx, v2[1] - lowy, v2[2]);
 		hp3[i] = thrust::make_tuple(v3[0] - lowx, v3[1] - lowy, v3[2]);
-		hcolor[i] = getColor(norm);
+		getColor(norm, hcolor[i]);
 	}
+	std::cout << std::endl;
 
 	//copy host vectors into device vectors
 	//thrust::copy(p1.begin(), p1.end(), hp1.begin());
