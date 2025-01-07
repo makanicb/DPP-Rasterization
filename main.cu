@@ -64,7 +64,7 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		thrust::device_vector<thrust::tuple<float,float,float>> &p2,
 		thrust::device_vector<thrust::tuple<float,float,float>> &p3,
 		thrust::device_vector<thrust::tuple<char,char,char>> &color,
-		int &numTri, char *filename)
+		int &numTri, char *filename, int &width, int &height)
 {
 	std::cout << "Start Read Triangles" << std::endl;
 	std::ifstream fin(filename);
@@ -98,6 +98,9 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	std::cout << numTri << " Triangles" << std::endl;
 	//parse file
 	//read contents into linear vectors
+	//variables to record minimum x and y values
+	int lowx = 0;
+	int lowy = 0;
 	for(int i = 0; i < numTri; i++)
 	{
 		//if(i % 10000 == 0)
@@ -119,9 +122,13 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		parseTriPair(l2, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//p1[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
-		p11[i] = v1;
-		p12[i] = v2;
-		p13[i] = v3;
+		p11[i] = v1; //get the x position 
+		p12[i] = v2; //get the y position
+		p13[i] = v3; //get the z position
+		width = std::max(width, (int) v1 + 1); //update width
+		height = std::max(height, (int) v2 + 1); //update height
+		lowx = std::min(lowx, (int) v1); //update lowx
+		lowy = std::min(lowy, (int) v2); //update lowy
 		//std::cout << "p2 " << l3 << std::endl;
 		parseTriPair(l3, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
@@ -129,6 +136,10 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		p21[i] = v1;
 		p22[i] = v2;
 		p23[i] = v3;
+		width = std::max(width, (int) v1 + 1);
+		height = std::max(height, (int) v2 + 1);
+		lowx = std::min(lowx, (int) v1);
+		lowy = std::min(lowy, (int) v2);
 		//std::cout << "p3 " << l4 << std::endl;
 		parseTriPair(l4, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
@@ -136,6 +147,10 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		p31[i] = v1;
 		p32[i] = v2;
 		p33[i] = v3;
+		width = std::max(width, (int) v1 + 1);
+		height = std::max(height, (int) v2 + 1);
+		lowx = std::min(lowx, (int) v1);
+		lowy = std::min(lowy, (int) v2);
 
 	}
 	fin.close();
@@ -152,6 +167,8 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	auto cb = thrust::make_zip_iterator(thrust::make_tuple(c1.begin(), c2.begin(), c3.begin()));
 	auto ce = thrust::make_zip_iterator(thrust::make_tuple(c1.end(), c2.end(), c3.end()));
 	thrust::copy(cb, ce, color.begin());
+	width -= lowx;
+	height -= lowy;
 }
 	
 
@@ -192,7 +209,8 @@ int main(int argc, char **argv)
 	std::cout << "Start Main" << std::endl;
 
 	int numTri;
-	readTriangles(p1, p2, p3, color, numTri, argv[1]);
+	readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
+	std::cout << "width: " << WIDTH << "height: " << HEIGHT << std::endl;
 
 	std::cout << "Finished Read Triangles" << std::endl;
 
