@@ -9,6 +9,7 @@
 #include <string>
 #include "rastByTri.h"
 #include "imageWriter.h"
+#include "readSTL.h"
 #ifndef DEBUG
 #define DEBUG 0
 #endif
@@ -209,10 +210,20 @@ int main(int argc, char **argv)
 	std::cout << "Start Main" << std::endl;
 
 	int numTri;
-	readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
-	std::cout << "width: " << WIDTH << "height: " << HEIGHT << std::endl;
+	char *fileType = argv[1];
+	for(; (*fileType) != '.'; fileType++);
+	fileType++;
+	std::cout << fileType << std::endl;
+	if(strcmp(fileType, "tri") == 0)
+		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
+	else if(strcmp(fileType, "stl") == 0)
+		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT);
+	else
+		return -1;
 
 	std::cout << "Finished Read Triangles" << std::endl;
+	
+	std::cout << "width: " << WIDTH << "height: " << HEIGHT << std::endl;
 
 	Image final_image;
 	initImage(&final_image, WIDTH, HEIGHT);
