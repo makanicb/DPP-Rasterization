@@ -170,11 +170,13 @@ unsigned int readTriFromBinarySTL(
 	}
 	width -= lowx;
 	height -= lowy;
+	//std::cout << "LOWX: " << lowx << " LOWY: " << lowy << std::endl;
 
-	fseek(f, 0, SEEK_SET); //go back to the start of the file
+	fseek(f, 84, SEEK_SET); //go back to the start of the file
 
 	//iterate over the triangles to read into triangle buffers
-
+	
+	std::cout << "x, y, z" << std::endl;
 	for(i = 0; i < numTri; i++)
 	{
 		//read into buffers
@@ -184,9 +186,12 @@ unsigned int readTriFromBinarySTL(
 		fread(v3, 4, 3, f);
 		fread(&attr, 2, 1, f);
 		//process buffers
-		hp1[i] = thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]);
-		hp2[i] = thrust::make_tuple(v2[0] - lowx, v2[1] - lowy, v2[2]);
-		hp3[i] = thrust::make_tuple(v3[0] - lowx, v3[1] - lowy, v3[2]);
+		std::cout << v1[0] - lowx << ", " << v1[1] - lowy << ", " << v1[2] << std::endl;
+		//hp1[i] = thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]);
+		std::cout << v2[0] - lowx << ", " << v2[1] - lowy << ", " << v2[2] << std::endl;
+		//hp2[i] = thrust::make_tuple(v2[0] - lowx, v2[1] - lowy, v2[2]);
+		std::cout << v3[0] - lowx << ", " << v3[1] - lowy << ", " << v3[2] << std::endl;
+		//hp3[i] = thrust::make_tuple(v3[0] - lowx, v3[1] - lowy, v3[2]);
 		getColor(norm, hcolor[i]);
 	}
 	std::cout << std::endl;
