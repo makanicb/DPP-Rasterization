@@ -186,12 +186,12 @@ unsigned int readTriFromBinarySTL(
 		fread(v3, 4, 3, f);
 		fread(&attr, 2, 1, f);
 		//process buffers
-		std::cout << v1[0] - lowx << ", " << v1[1] - lowy << ", " << v1[2] << std::endl;
-		//hp1[i] = thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]);
-		std::cout << v2[0] - lowx << ", " << v2[1] - lowy << ", " << v2[2] << std::endl;
-		//hp2[i] = thrust::make_tuple(v2[0] - lowx, v2[1] - lowy, v2[2]);
-		std::cout << v3[0] - lowx << ", " << v3[1] - lowy << ", " << v3[2] << std::endl;
-		//hp3[i] = thrust::make_tuple(v3[0] - lowx, v3[1] - lowy, v3[2]);
+		//std::cout << v1[0] - lowx << ", " << v1[1] - lowy << ", " << v1[2] << std::endl;
+		hp1[i] = thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]);
+		//std::cout << v2[0] - lowx << ", " << v2[1] - lowy << ", " << v2[2] << std::endl;
+		hp2[i] = thrust::make_tuple(v2[0] - lowx, v2[1] - lowy, v2[2]);
+		//std::cout << v3[0] - lowx << ", " << v3[1] - lowy << ", " << v3[2] << std::endl;
+		hp3[i] = thrust::make_tuple(v3[0] - lowx, v3[1] - lowy, v3[2]);
 		getColor(norm, hcolor[i]);
 	}
 	std::cout << std::endl;
