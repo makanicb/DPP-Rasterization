@@ -154,6 +154,9 @@ unsigned int readTriFromBinarySTL(
 	//variables for tracking lowest values
 	int lowx = 0;
 	int lowy = 0;
+	//reset width and height to 0
+	width = 0;
+	height = 0;
 	for(; i < numTri; i++)
 	{
 		//read into buffers
