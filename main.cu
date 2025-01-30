@@ -207,13 +207,17 @@ int main(int argc, char **argv)
 	color[1] = thrust::make_tuple(0,0,255);
 	//color[2] = thrust::make_tuple(0,255,0);*/
 
+#if DEBUG > 0
 	std::cout << "Start Main" << std::endl;
+#endif
 
 	int numTri;
 	char *fileType = argv[1];
 	for(; (*fileType) != '.'; fileType++);
 	fileType++;
+#if DEBUG > 1
 	std::cout << fileType << std::endl;
+#endif
 	if(strcmp(fileType, "tri") == 0)
 		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
 	else if(strcmp(fileType, "stl") == 0)
@@ -221,20 +225,25 @@ int main(int argc, char **argv)
 	else
 		return -1;
 
+#if DEBUG > 0
 	std::cout << "Finished Read Triangles" << std::endl;
-	
+#if DEBUG > 1	
 	std::cout << "width: " << WIDTH << " height: " << HEIGHT << std::endl;
 
 	std::cout << "Triangles: " << numTri << std::endl;
-
+#endif
+#endif
 	Image final_image;
 	initImage(&final_image, WIDTH, HEIGHT);
-
+#if DEBUG > 0
 	std::cout << "Finished Initialize Image" << std::endl;
+#endif
 
 	RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image);
 
+#if DEBUG > 0
 	std::cout << "Finished Rasterize Triangles" << std::endl;
+#endif
 
 	writeImage(&final_image, argv[2]);
 	//char *col = final_image.data;
@@ -243,9 +252,13 @@ int main(int argc, char **argv)
 	//	std::cout<<(int)col[i]<<","<<(int)col[i+1]<<","<<(int)col[i+2]<<std::endl;
 	//}
 
+#if DEBUG > 0
 	std::cout << "Finished Write Image" << std::endl;
+#endif
 		
 	freeImage(&final_image);
 
+#if DEBUG > 0
 	std::cout << "Program End" << std::endl;
+#endif
 }
