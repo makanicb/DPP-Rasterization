@@ -2,7 +2,7 @@
 
 read -p "File: " fin
 
-base=$(basename $fin .tri)
+base=$(basename $fin .stl)
 fout="${base}.pnm"
 echo $fin
 echo $fout
