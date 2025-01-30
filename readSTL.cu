@@ -1,6 +1,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
+#include <limits>
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/tuple.h>
@@ -152,11 +153,11 @@ unsigned int readTriFromBinarySTL(
 	short attr;
 	//iterate over triangles for max and min values
 	//variables for tracking lowest values
-	int lowx = 0;
-	int lowy = 0;
-	//reset width and height to 0
-	width = 0;
-	height = 0;
+	int lowx = std::numeric_limits<int>::max();
+	int lowy = std::numeric_limits<int>::max();
+	//reset width and height to minimum possible value
+	width = std::numeric_limits<int>::min();
+	height = std::numeric_limits<int>::min();
 	for(; i < numTri; i++)
 	{
 		//read into buffers
@@ -179,7 +180,7 @@ unsigned int readTriFromBinarySTL(
 
 	//iterate over the triangles to read into triangle buffers
 	
-	std::cout << "x, y, z" << std::endl;
+	//std::cout << "x, y, z" << std::endl;
 	for(i = 0; i < numTri; i++)
 	{
 		//read into buffers
@@ -197,7 +198,7 @@ unsigned int readTriFromBinarySTL(
 		hp3[i] = thrust::make_tuple(v3[0] - lowx, v3[1] - lowy, v3[2]);
 		getColor(norm, hcolor[i]);
 	}
-	std::cout << std::endl;
+	//std::cout << std::endl;
 
 	//copy host vectors into device vectors
 	//thrust::copy(p1.begin(), p1.end(), hp1.begin());
