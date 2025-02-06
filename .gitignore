@@ -8,3 +8,4 @@ pnmtopng
 data/
 rast
 start_int_gpu.sh
+triCount
