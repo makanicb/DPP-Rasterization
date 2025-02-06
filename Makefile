@@ -26,5 +26,8 @@ $(target) : $(objects)
 %.o : %.cu
 	$(CC) $(flags) -c $< -o $@
 
+triCount: getTriangleCount.c
+	gcc $< -o $@
+
 clean :
 	rm $(target) $(wildcard *.o)
