@@ -24,6 +24,8 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#include <viskores/cont/ArrayHandle.h>
+
 #include "imageWriter.h"
 #include "rastByTri.h"
 
@@ -275,6 +277,7 @@ void print_float_vec(thrust::device_vector<float>::iterator start,
 		std::cout << *start << " ";
 	std::cout << std::endl;
 }
+
 /*
 struct key_equality
 {
@@ -327,6 +330,11 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::host_vector<std::chrono::time_point<std::chrono::high_resolution_clock>> timer;
 	//time: function start
 	timer.push_back(std::chrono::high_resolution_clock::now());	
+
+/*
+   RASTERIZE
+*/
+
 #if DEBUG > 0
 	std::cout << "Count fragments" << std::endl;
 #endif
@@ -505,6 +513,11 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::gather(frag_tri.begin(), frag_tri.end(), color.begin(), frag_colors.begin());
 	//time: rasterized triangles. acquired all fragments
 	timer.push_back(std::chrono::high_resolution_clock::now());
+
+/*
+   SORT
+*/
+
 #if DEBUG > 0	
 	std::cout << "find fragments to write" << std::endl;
 
@@ -531,6 +544,11 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #endif
 	//time: sorted fragments
 	timer.push_back(std::chrono::high_resolution_clock::now());
+
+/*
+   SELECT
+*/
+
 #if DEBUG > 0
 	std::cout << "\tget fragments at lowest depth" << std::endl;
 #endif
@@ -612,6 +630,11 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #endif
 	//time: got visible fragments
 	timer.push_back(std::chrono::high_resolution_clock::now());
+
+/*
+   WRITE
+*/
+
 #if DEBUG > 0
 	std::cout << "write fragments" << std::endl;
 #endif
@@ -639,6 +662,11 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	}
 	//time: write final image to output
 	timer.push_back(std::chrono::high_resolution_clock::now());
+
+/*
+   DONE
+*/
+
 	//char *col = final_image.data;
 	//for(int i = 0; i < 60; i+=3)
 	//{
