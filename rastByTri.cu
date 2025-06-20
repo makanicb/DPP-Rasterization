@@ -25,6 +25,7 @@
 #include <thrust/unique.h>
 
 #include <viskores/cont/ArrayHandle.h>
+#include <viskores/cont/ArrayHandleCounting.h>
 
 #include "imageWriter.h"
 #include "rastByTri.h"
@@ -523,19 +524,59 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 
 	std::cout << "\tcopy position" << std::endl;
 #endif
-	thrust::device_vector<thrust::pair<int,int>> cpos(fragments);
-	thrust::device_vector<float> cdepth(fragments);
-	thrust::device_vector<thrust::tuple<char,char,char>> cfrag_colors(fragments);
-	thrust::device_vector<int> sorted_inds(fragments);
-	thrust::sequence(sorted_inds.begin(), sorted_inds.end());
+	//Allocate ArrayHandles for Sorting
+	viskores::cont::ArrayHandle<thrust::pair<int, int>> vcpos = 
+		viskores::cont::make_ArrayHandle(pos, viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<float> cdepth;
+	cdepth.Allocate(fragments);
+	/*
+	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> cfrag_colors;
+	cfrag_colors.Allocate(fragments);
+	*/
+	viskores::cont::ArrayHandleCounting<int> vsorted_inds(0, 1, fragments);
 
-	thrust::copy(pos.begin(), pos.end(), cpos.begin());
+	//Convert Thrust vectors to ArrayHandles
+	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vfrag_colors =
+		viskores::cont::make_ArrayHandle(frag_colors, viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<float> vdepth =
+		viskores::cont::make_ArrayHandle(depth, viskores::CopyFlag::On);
+
+
 #if DEBUG > 0
 	std::cout << "\tsort fragments" << std::endl;
 #endif
-	thrust::sort_by_key(cpos.begin(), cpos.end(), sorted_inds.begin());
-	thrust::gather(sorted_inds.begin(), sorted_inds.end(), frag_colors.begin(), cfrag_colors.begin());
-	thrust::gather(sorted_inds.begin(), sorted_inds.end(), depth.begin(), cdepth.begin());
+	viskores::cont::Algorithm::SortByKey(vcpos, vsorted_inds);
+	viskores::cont::ArrayHandlePermutation<thrust::tuple<char,char,char>> vcfrag_colors(
+		vsorted_inds, vfrag_colors
+	);
+	viskores::cont::ArrayHandlePermutation<float> vcdepth(vsorted_inds, vdepth);
+
+	//Convert ArrayHandles to Thrust vectors
+
+	//Create portals for reading
+	pos_Reader = vcpos.ReadPortal();
+	depth_Reader = vcdepth.ReadPortal();
+	color_Reader = vcfrag_colors.ReadPortal();
+	inds_Reader = vsorted_inds.ReadPortal();
+
+	//Create Thrust vectors
+	thrust::device_vector<thrust::pair<int,int>> cpos(
+		viskores::cont::ArrayPortalToIteratorBegin(pos_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(pos_Reader),
+	);
+	thrust::device_vector<float> cdepth(
+		viskores::cont::ArrayPortalToIteratorBegin(depth_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(depth_Reader),
+	);
+	thrust::device_vector<thrust::tuple<char,char,char>> cfrag_colors(
+		viskores::cont::ArrayPortalToIteratorBegin(color_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(color_Reader),
+	);
+	thrust::device_vector<int> sorted_inds(
+		viskores::cont::ArrayPortalToIteratorBegin(ind_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(ind_Reader),
+	);
+
 #if DEBUG > 3
 	std::cout << "Sorted" << std::endl;
 	print_pair_vec(cpos.begin(), cpos.end());
