@@ -15,5 +15,5 @@ thrust_create_target(Thrust HOST CPP DEVICE OMP)
 file(GLOB SRC_FILES *.cu)
 
 add_executable(rast ${SRC_FILES})
-target_link_libraries(rast Thrust)
 target_include_directories(rast PRIVATE .)
+target_link_libraries(rast Thrust viskores::cont)
