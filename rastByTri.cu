@@ -526,7 +526,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #endif
 	//Allocate ArrayHandles for Sorting
 	viskores::cont::ArrayHandle<thrust::pair<int, int>> vcpos = 
-		viskores::cont::make_ArrayHandle(pos, viskores::CopyFlag::On);
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(pos.data()), pos.size(), viskores::CopyFlag::On);
 	viskores::cont::ArrayHandle<float> cdepth;
 	cdepth.Allocate(fragments);
 	/*
@@ -537,9 +537,9 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 
 	//Convert Thrust vectors to ArrayHandles
 	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vfrag_colors =
-		viskores::cont::make_ArrayHandle(frag_colors, viskores::CopyFlag::On);
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(frag_colors.data()), frag_colors.size(), viskores::CopyFlag::On);
 	viskores::cont::ArrayHandle<float> vdepth =
-		viskores::cont::make_ArrayHandle(depth, viskores::CopyFlag::On);
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(depth.data()), frag_colors.size(), viskores::CopyFlag::On);
 
 
 #if DEBUG > 0
