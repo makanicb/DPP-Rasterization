@@ -555,15 +555,15 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #endif
 	viskores::cont::Algorithm::SortByKey(vcpos, vsorted_inds);
 	viskores::cont::ArrayHandlePermutation<viskores::cont::ArrayHandleCounting<viskores::Id>, viskores::cont::ArrayHandle<viskores::Vec3i_8>> vcfrag_colors(vsorted_inds, vfrag_colors);
-	viskores::cont::ArrayHandlePermutation<int, float> vcdepth(vsorted_inds, vdepth);
+	viskores::cont::ArrayHandlePermutation<viskores::cont::ArrayHandleCounting<viskores::Id>, viskores::cont::ArrayHandle<float>> vcdepth(vsorted_inds, vdepth);
 
 	//Convert ArrayHandles to Thrust vectors
 
 	//Create portals for reading
-	pos_Reader = vcpos.ReadPortal();
-	depth_Reader = vcdepth.ReadPortal();
-	color_Reader = vcfrag_colors.ReadPortal();
-	inds_Reader = vsorted_inds.ReadPortal();
+	auto pos_Reader = vcpos.ReadPortal();
+	auto depth_Reader = vcdepth.ReadPortal();
+	auto color_Reader = vcfrag_colors.ReadPortal();
+	auto inds_Reader = vsorted_inds.ReadPortal();
 
 	//Create Thrust vectors
 	thrust::device_vector<thrust::pair<int,int>> cpos(
