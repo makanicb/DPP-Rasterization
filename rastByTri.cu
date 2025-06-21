@@ -526,6 +526,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 
 	std::cout << "\tcopy position" << std::endl;
 #endif
+	/*
 	//Convert Thrust types to Viskores types
 	thrust::device_vector<viskores::Vec3i_8> tmp_colors(fragments);
 	auto ttuple_vvec = [] __device__ (thrust::tuple<char,char,char> t) {
@@ -537,6 +538,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		tmp_colors.begin(),
 		ttuple_vvec
 	);
+	*/
 
 	//Allocate ArrayHandles for Sorting
 	viskores::cont::ArrayHandle<thrust::pair<int, int>> vcpos = 
