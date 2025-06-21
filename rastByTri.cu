@@ -541,7 +541,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	//Allocate ArrayHandles for Sorting
 	viskores::cont::ArrayHandle<thrust::pair<int, int>> vcpos = 
 		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(pos.data()), pos.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandleCounting<int> vsorted_inds(0, 1, fragments);
+	viskores::cont::ArrayHandleCounting<viskores::Id> vsorted_inds(0, 1, fragments);
 
 	//Convert Thrust vectors to ArrayHandles
 	viskores::cont::ArrayHandle<viskores::Vec3i_8> vfrag_colors =
@@ -554,7 +554,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	std::cout << "\tsort fragments" << std::endl;
 #endif
 	viskores::cont::Algorithm::SortByKey(vcpos, vsorted_inds);
-	viskores::cont::ArrayHandlePermutation<viskores::cont::ArrayHandle<int>, viskores::cont::ArrayHandle<viskores::Vec3i_8>> vcfrag_colors(vsorted_inds, vfrag_colors);
+	viskores::cont::ArrayHandlePermutation<viskores::cont::ArrayHandleCounting<viskores::Id>, viskores::cont::ArrayHandle<viskores::Vec3i_8>> vcfrag_colors(vsorted_inds, vfrag_colors);
 	viskores::cont::ArrayHandlePermutation<int, float> vcdepth(vsorted_inds, vdepth);
 
 	//Convert ArrayHandles to Thrust vectors
