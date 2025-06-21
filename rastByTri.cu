@@ -541,7 +541,9 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	//Allocate ArrayHandles for Sorting
 	viskores::cont::ArrayHandle<thrust::pair<int, int>> vcpos = 
 		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(pos.data()), pos.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandleCounting<viskores::Id> vsorted_inds(0, 1, fragments);
+	viskores::cont::ArrayHandleCounting<viskores::Id> tmp_inds(0, 1, fragments);
+	viskores::cont::ArrayHandle<viskores::Id> vsorted_inds;
+	viskores::cont::Algorithm::Copy(tmp_inds, vsorted_inds);
 
 	//Convert Thrust vectors to ArrayHandles
 	viskores::cont::ArrayHandle<viskores::Vec3i_8> vfrag_colors =
@@ -554,8 +556,8 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	std::cout << "\tsort fragments" << std::endl;
 #endif
 	viskores::cont::Algorithm::SortByKey(vcpos, vsorted_inds);
-	viskores::cont::ArrayHandlePermutation<viskores::cont::ArrayHandleCounting<viskores::Id>, viskores::cont::ArrayHandle<viskores::Vec3i_8>> vcfrag_colors(vsorted_inds, vfrag_colors);
-	viskores::cont::ArrayHandlePermutation<viskores::cont::ArrayHandleCounting<viskores::Id>, viskores::cont::ArrayHandle<float>> vcdepth(vsorted_inds, vdepth);
+	viskores::cont::ArrayHandlePermutation<viskores::cont::ArrayHandle<viskores::Id>, viskores::cont::ArrayHandle<viskores::Vec3i_8>> vcfrag_colors(vsorted_inds, vfrag_colors);
+	viskores::cont::ArrayHandlePermutation<viskores::cont::ArrayHandle<viskores::Id>, viskores::cont::ArrayHandle<float>> vcdepth(vsorted_inds, vdepth);
 
 	//Convert ArrayHandles to Thrust vectors
 
@@ -568,19 +570,19 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	//Create Thrust vectors
 	thrust::device_vector<thrust::pair<int,int>> cpos(
 		viskores::cont::ArrayPortalToIteratorBegin(pos_Reader),
-		viskores::cont::ArrayPortalToIteratorEnd(pos_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(pos_Reader)
 	);
 	thrust::device_vector<float> cdepth(
 		viskores::cont::ArrayPortalToIteratorBegin(depth_Reader),
-		viskores::cont::ArrayPortalToIteratorEnd(depth_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(depth_Reader)
 	);
 	thrust::device_vector<thrust::tuple<char,char,char>> cfrag_colors(
 		viskores::cont::ArrayPortalToIteratorBegin(color_Reader),
-		viskores::cont::ArrayPortalToIteratorEnd(color_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(color_Reader)
 	);
 	thrust::device_vector<int> sorted_inds(
-		viskores::cont::ArrayPortalToIteratorBegin(ind_Reader),
-		viskores::cont::ArrayPortalToIteratorEnd(ind_Reader),
+		viskores::cont::ArrayPortalToIteratorBegin(inds_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(inds_Reader)
 	);
 
 #if DEBUG > 3
