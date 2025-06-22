@@ -16,5 +16,5 @@ file(GLOB SRC_FILES *.cu)
 
 add_executable(rast ${SRC_FILES})
 target_include_directories(rast PRIVATE .)
-target_link_libraries(rast Thrust viskores::cont)
+target_link_libraries(rast Thrust viskores::cont viskores::worklet)
 target_compile_options(rast PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda>)

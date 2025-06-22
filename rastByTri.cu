@@ -24,12 +24,16 @@
 #include <thrust/sort.h>
 #include <thrust/unique.h>
 
+#include <viskores/cont/Algorithm.h>
 #include <viskores/cont/ArrayHandle.h>
 #include <viskores/cont/ArrayHandleConstant.h>
 #include <viskores/cont/ArrayHandleCounting.h>
 #include <viskores/cont/ArrayHandleDiscard.h>
 #include <viskores/cont/ArrayHandlePermutation.h>
-#include <viskores/cont/Algorithm.h>
+#include <viskores/cont/Invoker.h>
+#include <viskores/worklet/DispatcherMapField.h>
+#include <viskores/worklet/ScatterCounting.h>
+#include <viskores/worklet/WorkletMapField.h>
 
 #include "imageWriter.h"
 #include "rastByTri.h"
@@ -37,6 +41,21 @@
 #ifndef DEBUG
 #define DEBUG 0 
 #endif
+
+struct ExpandWorklet : viskores::worklet::WorkletMapField
+{
+	using ControlSignature = void (FieldIn input, FieldIn counts, FieldOut output);
+	using ExecutionSignature = void(_1, _3, VisitIndex);
+	using InputDomain = _1;
+
+	using ScatterType = viskores::worklet::ScatterCounting;
+	
+	template<typename T>
+	VISKORES_EXEC void operator() (const T &in, T &out, viskores::IdComponent visitIndex) const
+	{
+		out = in;
+	}
+};
 
 __host__ __device__
 void getEnds(float x1, float y1, float x2, float y2, float x3, float y3, float y, float &end1, float &end2)
@@ -597,6 +616,46 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	viskores::cont::Algorithm::ReduceByKey(vcpos, viskores::cont::make_ArrayHandleConstant<int>(1, fragments),
 		       vtrue_fragments, vpos_count, thrust::plus<int>());	
 
+#if DEBUG > 3
+	std::cout << "Number of duplicates at each unique position" << std::endl;
+	print_int_vec(pos_count.begin(), pos_count.end());
+#endif
+#if DEBUG > 0
+	std::cout << "\tGet the minimum depth of each unique position" << std::endl;
+#endif
+	/* Thrust Implementation
+
+	thrust::device_vector<int> pos_start_ind(unique_positions);
+	thrust::exclusive_scan(pos_count.begin(), pos_count.end(), pos_start_ind.begin());
+#if DEBUG > 3
+	std::cout << "Offset by unique position" << std::endl;
+	print_int_vec(pos_start_ind.begin(), pos_start_ind.end());
+#endif
+	thrust::device_vector<int> depth_map(fragments);
+	expand_int(pos_start_ind.begin(), pos_count.begin(), depth_map.begin(), depth_map.end(), unique_positions);
+#if DEBUG > 3
+	std::cout << "Min depth gather position by fragment" << std::endl;
+	print_int_vec(depth_map.begin(), depth_map.end());
+#endif
+	thrust::device_vector<float> exp_min_depth(fragments);
+	thrust::gather(depth_map.begin(), depth_map.end(), min_depth.begin(), exp_min_depth.begin());
+
+	*/
+
+	/* Viskores Implementation */
+
+	viskores::cont::ArrayHandle<float> vexp_min_depth;
+	viskores::worklet::ScatterCounting expand_depths(vpos_count);
+	viskores::cont::Invoker invoke;
+	ExpandWorklet expand_worklet;
+	invoke(
+		expand_worklet,
+		expand_depths,
+		vmin_depth,
+		vpos_count,
+		vexp_min_depth
+	);
+
 	//Convert ArrayHandles to Thrust vectors
 
 	//Create portals for reading
@@ -608,6 +667,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	auto true_frag_reader = vtrue_fragments.ReadPortal();
 	auto min_depth_reader = vmin_depth.ReadPortal();
 	auto pos_count_reader = vpos_count.ReadPortal();
+	auto exp_min_depth_reader = vexp_min_depth.ReadPortal();
 
 	//Create Thrust vectors
 	thrust::device_vector<thrust::pair<int,int>> cpos(
@@ -639,28 +699,11 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		viskores::cont::ArrayPortalToIteratorBegin(pos_count_reader),
 		viskores::cont::ArrayPortalToIteratorEnd(pos_count_reader)
 	);
+	thrust::device_vector<float> exp_min_depth(
+		viskores::cont::ArrayPortalToIteratorBegin(exp_min_depth_reader),
+		viskores::cont::ArrayPortalToIteratorEnd(exp_min_depth_reader)
+	);
 
-#if DEBUG > 3
-	std::cout << "Number of duplicates at each unique position" << std::endl;
-	print_int_vec(pos_count.begin(), pos_count.end());
-#endif
-#if DEBUG > 0
-	std::cout << "\tGet the minimum depth of each unique position" << std::endl;
-#endif
-	thrust::device_vector<int> pos_start_ind(unique_positions);
-	thrust::exclusive_scan(pos_count.begin(), pos_count.end(), pos_start_ind.begin());
-#if DEBUG > 3
-	std::cout << "Offset by unique position" << std::endl;
-	print_int_vec(pos_start_ind.begin(), pos_start_ind.end());
-#endif
-	thrust::device_vector<int> depth_map(fragments);
-	expand_int(pos_start_ind.begin(), pos_count.begin(), depth_map.begin(), depth_map.end(), unique_positions);
-#if DEBUG > 3
-	std::cout << "Min depth gather position by fragment" << std::endl;
-	print_int_vec(depth_map.begin(), depth_map.end());
-#endif
-	thrust::device_vector<float> exp_min_depth(fragments);
-	thrust::gather(depth_map.begin(), depth_map.end(), min_depth.begin(), exp_min_depth.begin());
 #if DEBUG > 3
 	std::cout << "Min depth by fragment" << std::endl;
 	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
