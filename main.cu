@@ -2,14 +2,21 @@
 #include <thrust/host_vector.h>
 #include <thrust/copy.h>
 #include <thrust/iterator/zip_iterator.h>
+
+#include <viskores/cont/Initialize.h>
+
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
 #include <string>
+
 #include "rastByTri.h"
 #include "imageWriter.h"
 #include "readSTL.h"
+
+
+
 #ifndef DEBUG
 #define DEBUG 0
 #endif
@@ -180,6 +187,8 @@ int main(int argc, char **argv)
 		std::cerr << "USAGE: rast <input> <output> " << std::endl;
 		exit(EXIT_FAILURE);
 	}
+	//initialize viskores
+	viskores::cont::Initialize(argc, argv, viskores::cont::InitializeOptions::AddHelp);
 
 	//create width and height variables
 	int WIDTH = 300;
