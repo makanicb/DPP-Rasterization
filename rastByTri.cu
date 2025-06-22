@@ -598,6 +598,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #if DEBUG > 0
 	std::cout << "\tget fragments at lowest depth" << std::endl;
 #endif
+/*
 	//count the number of unique positions
 	int unique_positions;
 	{
@@ -609,6 +610,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #if DEBUG > 1
 	std::cout << "\tunique positions = " << unique_positions << std::endl;
 #endif
+*/
 	viskores::cont::ArrayHandle<thrust::pair<int,int>> vtrue_fragments;
 	viskores::cont::ArrayHandle<float> vmin_depth;
 	viskores::cont::ArrayHandle<int> vpos_count;
