@@ -25,7 +25,9 @@
 #include <thrust/unique.h>
 
 #include <viskores/cont/ArrayHandle.h>
+#include <viskores/cont/ArrayHandleConstant.h>
 #include <viskores/cont/ArrayHandleCounting.h>
+#include <viskores/cont/ArrayHandleDiscard.h>
 #include <viskores/cont/ArrayHandlePermutation.h>
 #include <viskores/cont/Algorithm.h>
 
@@ -561,32 +563,6 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	viskores::cont::ArrayHandlePermutation<viskores::cont::ArrayHandle<viskores::Id>, viskores::cont::ArrayHandle<thrust::tuple<char,char,char>>> vcfrag_colors(vsorted_inds, vfrag_colors);
 	viskores::cont::ArrayHandlePermutation<viskores::cont::ArrayHandle<viskores::Id>, viskores::cont::ArrayHandle<float>> vcdepth(vsorted_inds, vdepth);
 
-	//Convert ArrayHandles to Thrust vectors
-
-	//Create portals for reading
-	auto pos_Reader = vcpos.ReadPortal();
-	auto depth_Reader = vcdepth.ReadPortal();
-	auto color_Reader = vcfrag_colors.ReadPortal();
-	auto inds_Reader = vsorted_inds.ReadPortal();
-
-	//Create Thrust vectors
-	thrust::device_vector<thrust::pair<int,int>> cpos(
-		viskores::cont::ArrayPortalToIteratorBegin(pos_Reader),
-		viskores::cont::ArrayPortalToIteratorEnd(pos_Reader)
-	);
-	thrust::device_vector<float> cdepth(
-		viskores::cont::ArrayPortalToIteratorBegin(depth_Reader),
-		viskores::cont::ArrayPortalToIteratorEnd(depth_Reader)
-	);
-	thrust::device_vector<thrust::tuple<char,char,char>> cfrag_colors(
-		viskores::cont::ArrayPortalToIteratorBegin(color_Reader),
-		viskores::cont::ArrayPortalToIteratorEnd(color_Reader)
-	);
-	thrust::device_vector<int> sorted_inds(
-		viskores::cont::ArrayPortalToIteratorBegin(inds_Reader),
-		viskores::cont::ArrayPortalToIteratorEnd(inds_Reader)
-	);
-
 #if DEBUG > 3
 	std::cout << "Sorted" << std::endl;
 	print_pair_vec(cpos.begin(), cpos.end());
@@ -614,13 +590,56 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #if DEBUG > 1
 	std::cout << "\tunique positions = " << unique_positions << std::endl;
 #endif
-	thrust::device_vector<thrust::pair<int,int>> true_fragments(unique_positions);
-	thrust::device_vector<float> min_depth(unique_positions);
-	thrust::device_vector<int> pos_count(unique_positions);
-	thrust::reduce_by_key(cpos.begin(), cpos.end(), cdepth.begin(), true_fragments.begin(), 
-			min_depth.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::maximum<float>());
-	thrust::reduce_by_key(cpos.begin(), cpos.end(), thrust::make_constant_iterator<int>(1), thrust::make_discard_iterator(), 
-			pos_count.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::plus<int>());
+	viskores::cont::ArrayHandle<thrust::pair<int,int>> vtrue_fragments;
+	viskores::cont::ArrayHandle<float> vmin_depth;
+	viskores::cont::ArrayHandle<int> vpos_count;
+	viskores::cont::Algorithm::ReduceByKey(vcpos, vcdepth, vtrue_fragments, vmin_depth, thrust::maximum<float>());
+	viskores::cont::Algorithm::ReduceByKey(vcpos, viskores::cont::make_ArrayHandleConstant<int>(1, fragments),
+		       vtrue_fragments, vpos_count, thrust::plus<int>());	
+
+	//Convert ArrayHandles to Thrust vectors
+
+	//Create portals for reading
+	auto pos_Reader = vcpos.ReadPortal();
+	auto depth_Reader = vcdepth.ReadPortal();
+	auto color_Reader = vcfrag_colors.ReadPortal();
+	auto inds_Reader = vsorted_inds.ReadPortal();
+
+	auto true_frag_reader = vtrue_fragments.ReadPortal();
+	auto min_depth_reader = vmin_depth.ReadPortal();
+	auto pos_count_reader = vpos_count.ReadPortal();
+
+	//Create Thrust vectors
+	thrust::device_vector<thrust::pair<int,int>> cpos(
+		viskores::cont::ArrayPortalToIteratorBegin(pos_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(pos_Reader)
+	);
+	thrust::device_vector<float> cdepth(
+		viskores::cont::ArrayPortalToIteratorBegin(depth_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(depth_Reader)
+	);
+	thrust::device_vector<thrust::tuple<char,char,char>> cfrag_colors(
+		viskores::cont::ArrayPortalToIteratorBegin(color_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(color_Reader)
+	);
+	thrust::device_vector<int> sorted_inds(
+		viskores::cont::ArrayPortalToIteratorBegin(inds_Reader),
+		viskores::cont::ArrayPortalToIteratorEnd(inds_Reader)
+	);
+
+	thrust::device_vector<thrust::pair<int,int>> true_fragments(
+		viskores::cont::ArrayPortalToIteratorBegin(true_frag_reader),
+		viskores::cont::ArrayPortalToIteratorEnd(true_frag_reader)
+	);
+	thrust::device_vector<float> min_depth(
+		viskores::cont::ArrayPortalToIteratorBegin(min_depth_reader),
+		viskores::cont::ArrayPortalToIteratorEnd(min_depth_reader)
+	);
+	thrust::device_vector<int> pos_count(
+		viskores::cont::ArrayPortalToIteratorBegin(pos_count_reader),
+		viskores::cont::ArrayPortalToIteratorEnd(pos_count_reader)
+	);
+
 #if DEBUG > 3
 	std::cout << "Number of duplicates at each unique position" << std::endl;
 	print_int_vec(pos_count.begin(), pos_count.end());
