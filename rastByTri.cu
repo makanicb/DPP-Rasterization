@@ -658,6 +658,40 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		vexp_min_depth
 	);
 
+#if DEBUG > 3
+	std::cout << "Min depth by fragment" << std::endl;
+	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
+#endif
+/*
+	//std::cout << "Min depth" << std::endl;
+	//print_pair_vec(true_fragments.begin(), true_fragments.end());
+	//print_float_vec(min_depth.begin(), min_depth.end());
+
+	//thrust::device_vector<thrust::pair<int,int>>::iterator true_end = thrust::unique(true_fragments.begin(), true_fragments.end()) - 1;
+	//print_pair_vec(true_fragments.begin(), true_fragments.end());
+
+	std::cout << "\tfor each position, get the shallowest depth of a fragment at that position" << std::endl;
+	thrust::device_vector<int> find_real(fragments);
+	std::cout <<"\t\tfind each fragment position in list of lowest fragment positions" << std::endl;
+	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(pos.begin(), find_real.begin())),
+			 thrust::make_zip_iterator(thrust::make_tuple(pos.end(), find_real.end())),
+			 findPositions(true_fragments.begin(), true_fragments.end()));
+	//print_int_vec(find_real.begin(), find_real.end());
+	std::cout << "\t\tgather the shallowest depth for each fragment position" << std::endl;
+	thrust::device_vector<float> min_depth_by_fragment(fragments);
+	thrust::gather(find_real.begin(), find_real.end(), min_depth.begin(), min_depth_by_fragment.begin());
+*/
+#if DEBUG > 3
+	std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
+	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
+	print_float_vec(cdepth.begin(), cdepth.end());
+#endif
+#if DEBUG > 0
+	std::cout << "\tchoose fragments to write" << std::endl;
+#endif
+	viskores::cont::ArrayHandle<bool> vwrite_frag;
+	viskores::cont::Algorithm::Transform(vexp_min_depth, vcdepth, vwrite_frag, thrust::equal_to<float>());
+
 	//Convert ArrayHandles to Thrust vectors
 
 	//Create portals for reading
@@ -670,6 +704,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	auto min_depth_reader = vmin_depth.ReadPortal();
 	auto pos_count_reader = vpos_count.ReadPortal();
 	auto exp_min_depth_reader = vexp_min_depth.ReadPortal();
+	auto write_frag_reader = vwrite_frag.ReadPortal();
 
 	//Create Thrust vectors
 	thrust::device_vector<thrust::pair<int,int>> cpos(
@@ -705,40 +740,11 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		viskores::cont::ArrayPortalToIteratorBegin(exp_min_depth_reader),
 		viskores::cont::ArrayPortalToIteratorEnd(exp_min_depth_reader)
 	);
+	thrust::device_vector<bool> write_frag(
+		viskores::cont::ArrayPortalToIteratorBegin(write_frag_reader),
+		viskores::cont::ArrayPortalToIteratorEnd(write_frag_reader)
+	);
 
-#if DEBUG > 3
-	std::cout << "Min depth by fragment" << std::endl;
-	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
-#endif
-/*
-	//std::cout << "Min depth" << std::endl;
-	//print_pair_vec(true_fragments.begin(), true_fragments.end());
-	//print_float_vec(min_depth.begin(), min_depth.end());
-
-	//thrust::device_vector<thrust::pair<int,int>>::iterator true_end = thrust::unique(true_fragments.begin(), true_fragments.end()) - 1;
-	//print_pair_vec(true_fragments.begin(), true_fragments.end());
-
-	std::cout << "\tfor each position, get the shallowest depth of a fragment at that position" << std::endl;
-	thrust::device_vector<int> find_real(fragments);
-	std::cout <<"\t\tfind each fragment position in list of lowest fragment positions" << std::endl;
-	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(pos.begin(), find_real.begin())),
-			 thrust::make_zip_iterator(thrust::make_tuple(pos.end(), find_real.end())),
-			 findPositions(true_fragments.begin(), true_fragments.end()));
-	//print_int_vec(find_real.begin(), find_real.end());
-	std::cout << "\t\tgather the shallowest depth for each fragment position" << std::endl;
-	thrust::device_vector<float> min_depth_by_fragment(fragments);
-	thrust::gather(find_real.begin(), find_real.end(), min_depth.begin(), min_depth_by_fragment.begin());
-*/
-#if DEBUG > 3
-	std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
-	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
-	print_float_vec(cdepth.begin(), cdepth.end());
-#endif
-#if DEBUG > 0
-	std::cout << "\tchoose fragments to write" << std::endl;
-#endif
-	thrust::device_vector<bool> write_frag(fragments);
-	thrust::transform(exp_min_depth.begin(), exp_min_depth.end(), cdepth.begin(), write_frag.begin(), thrust::equal_to<float>());
 #if DEBUG > 3
 	std::cout << "Write fragment?" << std::endl;
 	for(int i = 0; i < fragments; i++)
