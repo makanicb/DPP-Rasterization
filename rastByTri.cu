@@ -31,8 +31,8 @@
 #include <viskores/cont/ArrayHandleDiscard.h>
 #include <viskores/cont/ArrayHandlePermutation.h>
 #include <viskores/cont/Invoker.h>
-#include <viskores/worklet/DispatcherMapField.h>
 #include <viskores/worklet/ScatterCounting.h>
+#include <viskores/worklet/ScatterPermutation.h>
 #include <viskores/worklet/WorkletMapField.h>
 
 #include "imageWriter.h"
@@ -55,6 +55,24 @@ struct ExpandWorklet : viskores::worklet::WorkletMapField
 	{
 		out = in;
 	}
+};
+
+template<typename PermutationStorage>
+struct FillImage : viskores::worklet::WorkletMapField
+{
+	using ControlSignature = void(FieldIn colors, FieldIn map, FieldIn stencil, WholeArrayOut image);
+	using ExecutionSignature = void(_1, _2, _3, _4);
+
+	template<typename InputType, typename StencilType, typename PortalType>
+	VISKORES_EXEC
+	void operator() (const InputType &col, const viskores::Id &pos, const StencilType &sten, PortalType &img) const
+	{
+		if (sten) 
+		{
+			img.Set(pos, col);	
+		}
+	}	
+
 };
 
 __host__ __device__
@@ -332,13 +350,16 @@ struct findPositions
 	}
 };
 
-struct toRowMajor
+struct ToRowMajor : viskores::worklet::WorkletMapField
 {
 	int w;
-	toRowMajor(int _w) : w(_w) {}
+	ToRowMajor(int _w) : w(_w) {}
 
-	__host__ __device__
-	int operator()(const thrust::pair<int,int> &pos)
+	using ControlSignature = void(FieldIn coordinates, FieldOut indices);
+	using ExecutionSignature = _2(_1);
+
+	VISKORES_EXEC
+	int operator()(const thrust::pair<int,int> &pos) const
 	{
 		return pos.first + pos.second * w;
 	}
@@ -354,6 +375,9 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::host_vector<std::chrono::time_point<std::chrono::high_resolution_clock>> timer;
 	//time: function start
 	timer.push_back(std::chrono::high_resolution_clock::now());	
+	
+	//Define a Viskores Invoker
+	viskores::cont::Invoker invoke;
 
 /*
    RASTERIZE
@@ -648,7 +672,6 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 
 	viskores::cont::ArrayHandle<float> vexp_min_depth;
 	viskores::worklet::ScatterCounting expand_depths(vpos_count);
-	viskores::cont::Invoker invoke;
 	ExpandWorklet expand_worklet;
 	invoke(
 		expand_worklet,
@@ -762,23 +785,43 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	std::cout << "write fragments" << std::endl;
 #endif
 
-	thrust::device_vector<int> rowMajorPos(fragments);
-	thrust::transform(cpos.begin(), cpos.end(), rowMajorPos.begin(), toRowMajor(width));
+	viskores::cont::ArrayHandle<viskores::Id> vrowMajorPos;
+	ToRowMajor to_row_major(width);
+	invoke(to_row_major, vcpos, vrowMajorPos);
+
+	auto row_major_reader = vrowMajorPos.ReadPortal();
+	viskores::Id max_pos = 0;
+	for(viskores::Id i = 0; i < row_major_reader.GetNumberOfValues(); i++)
+	{
+		if (row_major_reader.Get(i) > max_pos) max_pos = row_major_reader.Get(i);
+		std::cout << row_major_reader.Get(i) << "\t";
+	}
+	std::cout << std::endl << max_pos << std::endl;
+
 #if DEBUG > 3
 	std::cout << "Row major position by fragment" << std::endl;
 	print_int_vec(rowMajorPos.begin(), rowMajorPos.end());
 #endif
 
-	thrust::device_vector<thrust::tuple<unsigned char,unsigned char,unsigned char>> img(width * height);
-	thrust::fill(img.begin(), img.end(), thrust::make_tuple<unsigned char,unsigned char,unsigned char>(255,255,255));
-	thrust::scatter_if(cfrag_colors.begin(), cfrag_colors.end(), rowMajorPos.begin(), write_frag.begin(), img.begin());
+	//viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vbg;
+	//vbg.AllocateAndFill(width * height, thrust::make_tuple<char,char,char>(127,127,127));
+	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vimg;
+	vimg.AllocateAndFill(width * height, thrust::make_tuple<char,char,char>(127,127,127));
+	FillImage<viskores::cont::StorageTagBasic> fill_image;
+	invoke(
+		fill_image,
+		vcfrag_colors,
+		vrowMajorPos,
+		vwrite_frag,
+		vimg
+	);
 
-	thrust::host_vector<thrust::tuple<char,char,char>> h_img = img;
-	
+	auto img_Reader = vimg.ReadPortal();
+	std::cout << img_Reader.GetNumberOfValues() << ", " << width * height << std::endl;
 	int count = 0;
-	for(auto i = h_img.begin(); i < h_img.end(); i++)
+	for(viskores::Id i = 0; i < img_Reader.GetNumberOfValues(); i++)
 	{
-		thrust::tuple<char,char,char> t = *i;
+		thrust::tuple<char,char,char> t = img_Reader.Get(i);
 		final_image.data[count++] = thrust::get<0>(t);
 		final_image.data[count++] = thrust::get<1>(t);
 		final_image.data[count++] = thrust::get<2>(t);
