@@ -783,15 +783,6 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	ToRowMajor to_row_major(width);
 	invoke(to_row_major, vcpos, vrowMajorPos);
 
-	auto row_major_reader = vrowMajorPos.ReadPortal();
-	viskores::Id max_pos = 0;
-	for(viskores::Id i = 0; i < row_major_reader.GetNumberOfValues(); i++)
-	{
-		if (row_major_reader.Get(i) > max_pos) max_pos = row_major_reader.Get(i);
-		std::cout << row_major_reader.Get(i) << "\t";
-	}
-	std::cout << std::endl << max_pos << std::endl;
-
 #if DEBUG > 3
 	std::cout << "Row major position by fragment" << std::endl;
 	print_int_vec(rowMajorPos.begin(), rowMajorPos.end());
@@ -811,7 +802,6 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	);
 
 	auto img_Reader = vimg.ReadPortal();
-	std::cout << img_Reader.GetNumberOfValues() << ", " << width * height << std::endl;
 	int count = 0;
 	for(viskores::Id i = 0; i < img_Reader.GetNumberOfValues(); i++)
 	{
