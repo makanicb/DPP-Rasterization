@@ -550,9 +550,9 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1 = 
 		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
 	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p2.data()), p2.size(), viskores::CopyFlag::On);
 	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p3.data()), p3.size(), viskores::CopyFlag::On);
 	viskores::cont::ArrayHandle<int> vfrag_row = 
 		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(frag_row.data()), frag_row.size(), viskores::CopyFlag::On);
 	viskores::cont::ArrayHandle<int> vfrag_col = 
@@ -581,6 +581,20 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		viskores::cont::make_ArrayHandlePermutation(vfrag_tri, vp2),
 		viskores::cont::make_ArrayHandlePermutation(vfrag_tri, vp3),
 		vfrag_row, vfrag_col, vpos, vdepth);
+
+	auto tmp_pos_Reader = vpos.ReadPortal();
+	for(viskores::Id i = 0; i < tmp_pos_Reader.GetNumberOfValues(); i++)
+	{
+		std::cout << "(" << thrust::get<0>(tmp_pos_Reader.Get(i)) << ", " << 
+			thrust::get<1>(tmp_pos_Reader.Get(i)) << ")\t";
+	}
+	std::cout << std::endl;
+	auto tmp_dep_Reader = vdepth.ReadPortal();
+	for(viskores::Id i = 0; i < tmp_dep_Reader.GetNumberOfValues(); i++)
+	{
+		std::cout << tmp_dep_Reader.Get(i) << "\t";
+	}
+	std::cout << std::endl;
 
 #if DEBUG > 3
 	std::cout << "Position and depth of fragments" << std::endl;
@@ -815,6 +829,15 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	//vbg.AllocateAndFill(width * height, thrust::make_tuple<char,char,char>(127,127,127));
 	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vimg;
 	vimg.AllocateAndFill(width * height, thrust::make_tuple<char,char,char>(127,127,127));
+	/*
+	std::cout << vcfrag_colors.GetNumberOfValues() << std::endl;
+	std::cout << vrowMajorPos.GetNumberOfValues() << std::endl;
+	std::cout << vwrite_frag.GetNumberOfValues() << std::endl;
+	std::cout << vimg.GetNumberOfValues() << std::endl;
+	*/
+	auto max_pos = viskores::cont::Algorithm::Reduce(vrowMajorPos, (viskores::Id) 0,
+		       [](const auto& a, const auto& b){return std::max(a,b);});	
+	std::cout << max_pos << std::endl;
 	FillImage<viskores::cont::StorageTagBasic> fill_image;
 	invoke(
 		fill_image,
