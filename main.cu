@@ -182,13 +182,14 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 
 int main(int argc, char **argv)
 {
+	//initialize viskores
+	viskores::cont::Initialize(argc, argv, viskores::cont::InitializeOptions::AddHelp);
+
 	if(argc < 3)
 	{
 		std::cerr << "USAGE: rast <input> <output> " << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	//initialize viskores
-	viskores::cont::Initialize(argc, argv, viskores::cont::InitializeOptions::AddHelp);
 
 	//create width and height variables
 	int WIDTH = 300;
