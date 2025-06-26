@@ -25,6 +25,7 @@
 #include <thrust/unique.h>
 
 #include <viskores/cont/Algorithm.h>
+#include <viskores/cont/ArrayCopy.h>
 #include <viskores/cont/ArrayHandle.h>
 #include <viskores/cont/ArrayHandleConstant.h>
 #include <viskores/cont/ArrayHandleCounting.h>
@@ -267,6 +268,15 @@ struct colCount
 	}
 };
 
+/*
+    Given some list of groups let pred be the
+    number of elements in each group, and offset
+    be the starting position of each group in a
+    list of all elements in a supergroup containing
+    all groups. expand_int generates a list of all elements
+    of the supergroup where the value at an elements indice
+    is the index of the group it belongs to.
+*/
 void expand_int
 	(thrust::device_vector<int>::iterator map,
 	 thrust::device_vector<int>::iterator pred,
@@ -288,9 +298,14 @@ void expand_int
 		 thrust::maximum<int>());
 }	
 
+/*
+   Take a list of values and a list of counts,
+   and duplicate each value a number of times
+   equal to the count at its index
+*/
 template<typename T, typename CountT>
-void vexpand(viskores::cont::ArrayHandle<T> &values,
-		 viskores::cont::ArrayHandle<CountT> &count,
+void vduplicate(const viskores::cont::ArrayHandle<T> &values,
+		 const viskores::cont::ArrayHandle<CountT> &count,
 		 viskores::cont::ArrayHandle<T> &output)
 {
 	viskores::cont::Invoker invoke;
@@ -306,6 +321,38 @@ void vexpand(viskores::cont::ArrayHandle<T> &values,
 
 }
 
+/*
+    Given some list of groups let counts be the
+    number of elements in each group, and assume
+    that the order in which groups appear in counts
+    is the same as the order in which they appear in
+    a supergroup containing all groups. vexpand generates
+    a list of all elements of the supergroup where
+    the value at an element's indice is the index 
+    of the group it belongs to.
+*/
+template<typename T, typename CountT>
+void vexpand(viskores::cont::ArrayHandle<CountT> &counts,
+		 viskores::cont::ArrayHandle<T> &output)
+{
+	viskores::Id length = counts.GetNumberOfValues();
+	viskores::cont::ArrayHandle<T> sequence;
+	viskores::cont::ArrayCopy
+		(viskores::cont::make_ArrayHandleCounting<T>(0, 1, length),
+		 sequence);
+	vduplicate<T, CountT>(
+		sequence,
+		counts,
+		output
+	);
+}
+
+/*
+   Let map be a list associating elements to their
+   groups, and src be a list of group offsets.
+   index_int generates a list where the value at an
+   element's index is its index within its group.
+*/
 void index_int
 	(thrust::device_vector<int>::iterator map,
 	 thrust::device_vector<int>::iterator src,
@@ -320,6 +367,12 @@ void index_int
 		 thrust::minus<int>());
 }
 
+/*
+   Let map be a list associating elements to their
+   groups, and src be a list of group offsets.
+   vindex generates a list where the value at an
+   element's index is its index within its group.
+*/
 template<typename IndexType, typename ValueType>
 void vindex
 	(viskores::cont::ArrayHandle<IndexType> &map,
@@ -358,6 +411,17 @@ void print_float_vec(thrust::device_vector<float>::iterator start,
 {
 	for(; start < end; start++)
 		std::cout << *start << " ";
+	std::cout << std::endl;
+}
+
+template<typename T>
+void print_ArrayHandle(const viskores::cont::ArrayHandle<T> &arr)
+{
+	auto arr_Reader = arr.ReadPortal();
+	for (viskores::Id i = 0; i < arr_Reader.GetNumberOfValues(); i++)
+	{
+		std::cout << arr_Reader.Get(i) << "\t";
+	}
 	std::cout << std::endl;
 }
 
@@ -572,18 +636,30 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	viskores::cont::ArrayHandle<viskores::Id> vfrag_col;
 
 	//Determine fragment rows and columns
-	vexpand(vcol_off, vcol_count, vfrag_row);
+	vexpand(vcol_count, vfrag_row);
+	std::cout << "Frag Rows" << std::endl;
+	print_ArrayHandle(vfrag_row);
 
-	vfrag_col.DeepCopyFrom(vfrag_col);
-	std::cout << "Sussy?" << std::endl;
-	vindex(vfrag_col, vcol_off, vfrag_col);
+	//temporary copies
+	/*
+	viskores::cont::ArrayHandle<viskores::Id> vtmp_frag_row;
+	viskores::cont::ArrayHandle<viskores::Id> vtmp_frag_col;
+	vtmp_frag_row.DeepCopyFrom(vfrag_row);
+	vtmp_frag_col.DeepCopyFrom(vfrag_col);
+	*/
+
+	vindex(vfrag_row, vcol_off, vfrag_col);
 
 	viskores::cont::Algorithm::Transform
 		(vfrag_row,
 		 viskores::cont::make_ArrayHandlePermutation(vfrag_tri, vrow_off),
 		 vfrag_row,
 		 thrust::minus<viskores::Id>());
-	std::cout << "Baka" << std::endl;
+	std::cout << "Size of frag_row, frag_col: " <<
+		vfrag_row.GetNumberOfValues() << ", " <<
+		vfrag_col.GetNumberOfValues() << std::endl;
+	std::cout << "Frag Col" << std::endl;
+	print_ArrayHandle(vfrag_col);
 		 
 #if DEBUG > 3 
 	std::cout << "Frag positions by row and column in every triangle." << std::endl;
@@ -743,7 +819,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	/* Viskores Implementation */
 
 	viskores::cont::ArrayHandle<float> vexp_min_depth;
-	vexpand(vmin_depth, vpos_count, vexp_min_depth);
+	vduplicate(vmin_depth, vpos_count, vexp_min_depth);
 
 #if DEBUG > 3
 	std::cout << "Min depth by fragment" << std::endl;
