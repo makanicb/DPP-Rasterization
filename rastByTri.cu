@@ -320,6 +320,19 @@ void index_int
 		 thrust::minus<int>());
 }
 
+template<typename IndexType, typename ValueType>
+void vindex
+	(viskores::cont::ArrayHandle<IndexType> &map,
+	 viskores::cont::ArrayHandle<ValueType> &src,
+	 viskores::cont::ArrayHandle<ValueType> &out)
+{
+	viskores::Id length = map.GetNumberOfValues();
+	viskores::cont::Algorithm::Transform
+		(viskores::cont::make_ArrayHandleCounting<ValueType>(0, 1, length),
+		 viskores::cont::make_ArrayHandlePermutation(map, src),
+		 out, thrust::minus<ValueType>());
+}
+
 
 void print_int_vec(thrust::device_vector<int>::iterator start,
 		   thrust::device_vector<int>::iterator end)
@@ -541,41 +554,51 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	std::cout << "Number of columns " <<  col_off[num_rows-1] + col_count[num_rows-1] << std::endl;
 #endif
 	assert((fragments == (int)col_off[num_rows-1] + (int)col_count[num_rows-1]));
-	thrust::device_vector<int> frag_row(fragments);
+	//Copy vectors to array handles
+	std::vector<viskores::Id> tmp_frag_tri(frag_tri.begin(), frag_tri.end());
+	viskores::cont::ArrayHandle<viskores::Id> vfrag_tri = 
+		viskores::cont::make_ArrayHandle(tmp_frag_tri, viskores::CopyFlag::On);
+	std::vector<viskores::Id> tmp_row_off(row_off.begin(), row_off.end());
+	viskores::cont::ArrayHandle<viskores::Id> vrow_off = 
+		viskores::cont::make_ArrayHandle(tmp_row_off, viskores::CopyFlag::On);
+	std::vector<viskores::Id> tmp_col_off(col_off.begin(), col_off.end());
+	viskores::cont::ArrayHandle<viskores::Id> vcol_off = 
+		viskores::cont::make_ArrayHandle(tmp_col_off, viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<int> vcol_count = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(col_count.data()), col_count.size(), viskores::CopyFlag::On);
 
-	expand_int(col_off.begin(), col_count.begin(), frag_row.begin(), frag_row.end(), num_rows);
+	//Initialize ArrayHandles
+	viskores::cont::ArrayHandle<viskores::Id> vfrag_row;
+	viskores::cont::ArrayHandle<viskores::Id> vfrag_col;
 
-	thrust::device_vector<int> frag_col(fragments);
+	//Determine fragment rows and columns
+	vexpand(vcol_off, vcol_count, vfrag_row);
 
-	expand_int(col_off.begin(), col_count.begin(), frag_col.begin(), frag_col.end(), num_rows);
-	index_int(frag_col.begin(), col_off.begin(), frag_col.begin(), fragments);
+	vfrag_col.DeepCopyFrom(vfrag_col);
+	std::cout << "Sussy?" << std::endl;
+	vindex(vfrag_col, vcol_off, vfrag_col);
 
-	thrust::transform
-		(frag_row.begin(),
-		 frag_row.end(),
-		 thrust::make_permutation_iterator(row_off.begin(), frag_tri.begin()),
-		 frag_row.begin(),
-		 thrust::minus<int>());
+	viskores::cont::Algorithm::Transform
+		(vfrag_row,
+		 viskores::cont::make_ArrayHandlePermutation(vfrag_tri, vrow_off),
+		 vfrag_row,
+		 thrust::minus<viskores::Id>());
+	std::cout << "Baka" << std::endl;
+		 
 #if DEBUG > 3 
 	std::cout << "Frag positions by row and column in every triangle." << std::endl;
 	print_int_vec(frag_row.begin(), frag_row.end());
 	print_int_vec(frag_col.begin(), frag_col.end());
 #endif
 	//Copy vectors to ArrayHandles
-	std::vector<viskores::Id> tmp_frag_tri(frag_tri.begin(), frag_tri.end());
-	viskores::cont::ArrayHandle<viskores::Id> vfrag_tri = 
-		viskores::cont::make_ArrayHandle(tmp_frag_tri, viskores::CopyFlag::On);
 	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1 = 
 		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
 	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2 = 
 		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p2.data()), p2.size(), viskores::CopyFlag::On);
 	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3 = 
 		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p3.data()), p3.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<int> vfrag_row = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(frag_row.data()), frag_row.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<int> vfrag_col = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(frag_col.data()), frag_col.size(), viskores::CopyFlag::On);
 
+	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<thrust::pair<int,int>> vpos;
 	viskores::cont::ArrayHandle<float> vdepth;
 
@@ -593,6 +616,8 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 				thrust::make_permutation_iterator(p3.begin(), frag_tri.end()),
 				frag_row.end(), frag_col.end(), pos.end(), depth.end())),
 		rasterize());*/
+
+	//Rasterize
 	Rasterize rasterize;	
 	invoke(rasterize,
 		viskores::cont::make_ArrayHandlePermutation(vfrag_tri, vp1),
