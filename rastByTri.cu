@@ -288,6 +288,24 @@ void expand_int
 		 thrust::maximum<int>());
 }	
 
+template<typename T, typename CountT>
+void vexpand(viskores::cont::ArrayHandle<T> &values,
+		 viskores::cont::ArrayHandle<CountT> &count,
+		 viskores::cont::ArrayHandle<T> &output)
+{
+	viskores::cont::Invoker invoke;
+	viskores::worklet::ScatterCounting scatter(count);
+	ExpandWorklet expand_worklet;
+	invoke(
+		expand_worklet,
+		scatter,
+		values,
+		count,
+		output
+	);
+
+}
+
 void index_int
 	(thrust::device_vector<int>::iterator map,
 	 thrust::device_vector<int>::iterator src,
@@ -582,7 +600,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		viskores::cont::make_ArrayHandlePermutation(vfrag_tri, vp3),
 		vfrag_row, vfrag_col, vpos, vdepth);
 
-	auto tmp_pos_Reader = vpos.ReadPortal();
+	/*auto tmp_pos_Reader = vpos.ReadPortal();
 	for(viskores::Id i = 0; i < tmp_pos_Reader.GetNumberOfValues(); i++)
 	{
 		std::cout << "(" << thrust::get<0>(tmp_pos_Reader.Get(i)) << ", " << 
@@ -594,7 +612,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	{
 		std::cout << tmp_dep_Reader.Get(i) << "\t";
 	}
-	std::cout << std::endl;
+	std::cout << std::endl;*/
 
 #if DEBUG > 3
 	std::cout << "Position and depth of fragments" << std::endl;
@@ -700,15 +718,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	/* Viskores Implementation */
 
 	viskores::cont::ArrayHandle<float> vexp_min_depth;
-	viskores::worklet::ScatterCounting expand_depths(vpos_count);
-	ExpandWorklet expand_worklet;
-	invoke(
-		expand_worklet,
-		expand_depths,
-		vmin_depth,
-		vpos_count,
-		vexp_min_depth
-	);
+	vexpand(vmin_depth, vpos_count, vexp_min_depth);
 
 #if DEBUG > 3
 	std::cout << "Min depth by fragment" << std::endl;
