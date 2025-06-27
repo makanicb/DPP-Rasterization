@@ -77,7 +77,7 @@ struct FillImage : viskores::worklet::WorkletMapField
 
 };
 
-__host__ __device__
+VISKORES_EXEC
 void getEnds(float x1, float y1, float x2, float y2, float x3, float y3, float y, float &end1, float &end2)
 {
 		float ed1, ed2, ed3;
@@ -129,19 +129,26 @@ void getEnds(float x1, float y1, float x2, float y2, float x3, float y3, float y
 		}
 }
 
-struct fragCount
+struct FragCount : viskores::worklet::WorkletMapField
 {
-	template <typename Tuple>
-	__host__ __device__
-	void operator()(Tuple t)
+	using ControlSignature = void(
+		FieldIn p1,
+		FieldIn p2,
+		FieldIn p3,
+		FieldOut fragCount);
+	using ExecutionSignature = void(_1, _2, _3, _4);
+	template <typename PointType, typename FragCountType>
+	VISKORES_EXEC
+	void operator()(const PointType &p1, const PointType &p2, const PointType &p3,
+			FragCountType &fragCount) const
 	{
 		float x1, y1, x2, y2, x3, y3;
-		x1 = thrust::get<0>(thrust::get<0>(t));
-		y1 = thrust::get<1>(thrust::get<0>(t));
-		x2 = thrust::get<0>(thrust::get<1>(t));
-		y2 = thrust::get<1>(thrust::get<1>(t));
-		x3 = thrust::get<0>(thrust::get<2>(t));
-		y3 = thrust::get<1>(thrust::get<2>(t));
+		x1 = thrust::get<0>(p1);
+		y1 = thrust::get<1>(p1);
+		x2 = thrust::get<0>(p2);
+		y2 = thrust::get<1>(p2);
+		x3 = thrust::get<0>(p3);
+		y3 = thrust::get<1>(p3);
 		float minY = y1 < y2 ? y1 : y2;
 		minY = minY < y3 ? minY : y3;
 		float maxY = y1 > y2 ? y1 : y2;
@@ -156,7 +163,7 @@ struct fragCount
 			frags += floor(end2) - ceil(end1) + 1;
 		}
 
-		thrust::get<3>(t) = frags;
+		fragCount = frags;
 	}
 };
 
@@ -511,19 +518,23 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #if DEBUG > 1 
 	std::cout << numTri << " Triangles" << std::endl;
 #endif	
-	thrust::device_vector<int> frags(numTri);
+	//Copy vectors to ArrayHandles
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p2.data()), p2.size(), viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p3.data()), p3.size(), viskores::CopyFlag::On);
 
-	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), frags.begin())),
-			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), frags.end())),
-			 fragCount());
+	viskores::cont::ArrayHandle<int> vfrags;
+
+	FragCount fragCount;
+	invoke(fragCount, vp1, vp2, vp3, vfrags);
+
 #if DEBUG > 1 
 	std::cout << "# frags by triange: " << std::endl;
 	print_int_vec(frags.begin(), frags.end());
 #endif
-	//Copy vectors to ArrayHandles
-	viskores::cont::ArrayHandle<int> vfrags = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(frags.data()), frags.size(), viskores::CopyFlag::On);
-
 	viskores::cont::ArrayHandle<viskores::Id> vwrite_index;
 	viskores::cont::Algorithm::ScanExclusive(viskores::cont::make_ArrayHandleCast<viskores::Id>(vfrags),
 			vwrite_index);
@@ -568,14 +579,6 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		 thrust::make_permutation_iterator(write_index.begin(), frag_pos.begin()), frag_ind.begin(),
 		 thrust::minus<int>());
 */	
-	//Copy vectors to ArrayHandles
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p2.data()), p2.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p3.data()), p3.size(), viskores::CopyFlag::On);
-
 	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<int> vrows;
 	RowCount rowCount;
