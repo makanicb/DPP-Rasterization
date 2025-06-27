@@ -520,25 +520,25 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	std::cout << "# frags by triange: " << std::endl;
 	print_int_vec(frags.begin(), frags.end());
 #endif
+	//Copy vectors to ArrayHandles
+	viskores::cont::ArrayHandle<int> vfrags = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(frags.data()), frags.size(), viskores::CopyFlag::On);
 
-	thrust::device_vector<int> write_index(numTri);
-
-	thrust::exclusive_scan(frags.begin(), frags.end(), write_index.begin());
+	viskores::cont::ArrayHandle<viskores::Id> vwrite_index;
+	viskores::cont::Algorithm::ScanExclusive(viskores::cont::make_ArrayHandleCast<viskores::Id>(vfrags),
+			vwrite_index);
 #if DEBUG > 1
 	std::cout << "write position by triange: " << std::endl;
 	print_int_vec(write_index.begin(), write_index.end());
 #endif
 
-	int fragments = write_index[numTri-1] + frags[numTri-1];
+	int fragments = vwrite_index.ReadPortal().Get(numTri-1) + vfrags.ReadPortal().Get(numTri-1);
 #if DEBUG > 1	
 	std::cout << "Number of fragments: " << fragments << std::endl;
 #endif
 #if DEBUG > 0
 	std::cout << "Get fragments" << std::endl;
 #endif
-	//Copy vectors to ArrayHandles
-	viskores::cont::ArrayHandle<int> vfrags = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(frags.data()), frags.size(), viskores::CopyFlag::On);
 
 	viskores::cont::ArrayHandle<viskores::Id> vfrag_tri;
 	vexpand(vfrags, vfrag_tri);
