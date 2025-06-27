@@ -536,9 +536,12 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #if DEBUG > 0
 	std::cout << "Get fragments" << std::endl;
 #endif
+	//Copy vectors to ArrayHandles
+	viskores::cont::ArrayHandle<int> vfrags = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(frags.data()), frags.size(), viskores::CopyFlag::On);
 
-	thrust::device_vector<int> frag_tri(fragments);
-	expand_int(write_index.begin(), frags.begin(), frag_tri.begin(), frag_tri.end(), numTri);
+	viskores::cont::ArrayHandle<viskores::Id> vfrag_tri;
+	vexpand(vfrags, vfrag_tri);
 #if DEBUG > 3
 	std::cout << "Which triangle does each fragment belong to?" << std::endl;
 	print_int_vec(frag_tri.begin(), frag_tri.end());
@@ -639,11 +642,6 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	std::cout << "Number of columns " <<  col_off[num_rows-1] + col_count[num_rows-1] << std::endl;
 #endif
 	assert((fragments == (int)vcol_off.ReadPortal().Get(num_rows-1) + (int)vcol_count.ReadPortal().Get(num_rows-1)));
-	//Copy vectors to array handles
-	std::vector<viskores::Id> tmp_frag_tri(frag_tri.begin(), frag_tri.end());
-	viskores::cont::ArrayHandle<viskores::Id> vfrag_tri = 
-		viskores::cont::make_ArrayHandle(tmp_frag_tri, viskores::CopyFlag::On);
-
 	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<viskores::Id> vfrag_row;
 	viskores::cont::ArrayHandle<viskores::Id> vfrag_col;
