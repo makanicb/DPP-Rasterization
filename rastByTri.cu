@@ -27,6 +27,7 @@
 #include <viskores/cont/Algorithm.h>
 #include <viskores/cont/ArrayCopy.h>
 #include <viskores/cont/ArrayHandle.h>
+#include <viskores/cont/ArrayHandleCast.h>
 #include <viskores/cont/ArrayHandleConstant.h>
 #include <viskores/cont/ArrayHandleCounting.h>
 #include <viskores/cont/ArrayHandleDiscard.h>
@@ -608,16 +609,20 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	std::cout << "How many columns does each row have?" << std::endl;
 	print_int_vec(col_count.begin(), col_count.end());
 #endif
+	//Copy vectors to ArrayHandles
+	viskores::cont::ArrayHandle<int> vcol_count = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(col_count.data()), col_count.size(), viskores::CopyFlag::On);
 
-	thrust::device_vector<int> col_off(num_rows);
+	viskores::cont::ArrayHandle<viskores::Id> vcol_off;
 
-	thrust::exclusive_scan(col_count.begin(), col_count.end(), col_off.begin());
+	viskores::cont::Algorithm::ScanExclusive
+		(viskores::cont::make_ArrayHandleCast<viskores::Id>(vcol_count), vcol_off);
 #if DEBUG > 2 
 	std::cout << "Column offsets by row" << std::endl;
 	print_int_vec(col_off.begin(), col_off.end());
 	std::cout << "Number of columns " <<  col_off[num_rows-1] + col_count[num_rows-1] << std::endl;
 #endif
-	assert((fragments == (int)col_off[num_rows-1] + (int)col_count[num_rows-1]));
+	assert((fragments == (int)vcol_off.ReadPortal().Get(num_rows-1) + (int)vcol_count.ReadPortal().Get(num_rows-1)));
 	//Copy vectors to array handles
 	std::vector<viskores::Id> tmp_frag_tri(frag_tri.begin(), frag_tri.end());
 	viskores::cont::ArrayHandle<viskores::Id> vfrag_tri = 
@@ -625,11 +630,6 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	std::vector<viskores::Id> tmp_row_off(row_off.begin(), row_off.end());
 	viskores::cont::ArrayHandle<viskores::Id> vrow_off = 
 		viskores::cont::make_ArrayHandle(tmp_row_off, viskores::CopyFlag::On);
-	std::vector<viskores::Id> tmp_col_off(col_off.begin(), col_off.end());
-	viskores::cont::ArrayHandle<viskores::Id> vcol_off = 
-		viskores::cont::make_ArrayHandle(tmp_col_off, viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<int> vcol_count = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(col_count.data()), col_count.size(), viskores::CopyFlag::On);
 
 	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<viskores::Id> vfrag_row;
@@ -638,7 +638,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	//Determine fragment rows and columns
 	vexpand(vcol_count, vfrag_row);
 	std::cout << "Frag Rows" << std::endl;
-	print_ArrayHandle(vfrag_row);
+	//print_ArrayHandle(vfrag_row);
 
 	//temporary copies
 	/*
@@ -655,11 +655,11 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		 viskores::cont::make_ArrayHandlePermutation(vfrag_tri, vrow_off),
 		 vfrag_row,
 		 thrust::minus<viskores::Id>());
-	std::cout << "Size of frag_row, frag_col: " <<
-		vfrag_row.GetNumberOfValues() << ", " <<
-		vfrag_col.GetNumberOfValues() << std::endl;
-	std::cout << "Frag Col" << std::endl;
-	print_ArrayHandle(vfrag_col);
+	//std::cout << "Size of frag_row, frag_col: " <<
+	//	vfrag_row.GetNumberOfValues() << ", " <<
+	//	vfrag_col.GetNumberOfValues() << std::endl;
+	//std::cout << "Frag Col" << std::endl;
+	//print_ArrayHandle(vfrag_col);
 		 
 #if DEBUG > 3 
 	std::cout << "Frag positions by row and column in every triangle." << std::endl;
@@ -946,9 +946,9 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	std::cout << vwrite_frag.GetNumberOfValues() << std::endl;
 	std::cout << vimg.GetNumberOfValues() << std::endl;
 	*/
-	auto max_pos = viskores::cont::Algorithm::Reduce(vrowMajorPos, (viskores::Id) 0,
-		       [](const auto& a, const auto& b){return std::max(a,b);});	
-	std::cout << max_pos << std::endl;
+	//auto max_pos = viskores::cont::Algorithm::Reduce(vrowMajorPos, (viskores::Id) 0,
+	//	       [](const auto& a, const auto& b){return std::max(a,b);});	
+	//std::cout << max_pos << std::endl;
 	FillImage<viskores::cont::StorageTagBasic> fill_image;
 	invoke(
 		fill_image,
