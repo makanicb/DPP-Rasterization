@@ -228,21 +228,29 @@ struct Rasterize : viskores::worklet::WorkletMapField
 	}
 };
 
-struct rowCount
+struct RowCount : viskores::worklet::WorkletMapField
 {
-	template <typename Tuple>
-	__host__ __device__
-	void operator()(Tuple t)
+	using ControlSignature = void(
+		FieldIn p1,
+		FieldIn p2,
+		FieldIn p3,
+		FieldOut rowCount
+	);
+	using ExecutionSignature = void(_1, _2, _3, _4);
+	template <typename PointType, typename RowCountType>
+	VISKORES_EXEC
+	void operator()(const PointType &p1, const PointType &p2, const PointType &p3,
+			RowCountType &rowCount) const
 	{
 		float y1, y2, y3;
-		y1 = thrust::get<1>(thrust::get<0>(t));
-		y2 = thrust::get<1>(thrust::get<1>(t));
-		y3 = thrust::get<1>(thrust::get<2>(t)); 
+		y1 = thrust::get<1>(p1);
+		y2 = thrust::get<1>(p2);
+		y3 = thrust::get<1>(p3); 
 		float minY = y1 < y2 ? y1 : y2; 
 		minY = minY < y3 ? minY : y3;
 		float maxY = y1 > y2 ? y1 : y2; 
 		maxY = maxY > y3 ? maxY : y3;
-		thrust::get<3>(t) = floor(maxY) - ceil(minY) + 1; 
+		rowCount = floor(maxY) - ceil(minY) + 1; 
 	}
 };
 
@@ -557,19 +565,26 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		 thrust::make_permutation_iterator(write_index.begin(), frag_pos.begin()), frag_ind.begin(),
 		 thrust::minus<int>());
 */	
-	thrust::device_vector<int> rows(numTri);
-	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), rows.begin())),
-			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), rows.end())),
-			 rowCount());
+	//Copy vectors to ArrayHandles
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p2.data()), p2.size(), viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p3.data()), p3.size(), viskores::CopyFlag::On);
+
+	//Initialize ArrayHandles
+	viskores::cont::ArrayHandle<int> vrows;
+	RowCount rowCount;
+	invoke(rowCount, vp1, vp2, vp3, vrows);
 #if DEBUG > 1
 	std::cout << "How many rows does each triangle have?" << std::endl;
 	for(int i = 0; i < numTri; i++)
 		std::cout << rows[i] << " ";
 	std::cout << std::endl;
 #endif
-
-	thrust::device_vector<int> row_off(numTri);
-	thrust::exclusive_scan(rows.begin(), rows.end(), row_off.begin());
+	viskores::cont::ArrayHandle<viskores::Id> vrow_off;
+	viskores::cont::Algorithm::ScanExclusive(viskores::cont::make_ArrayHandleCast<viskores::Id>(vrows), vrow_off);
 #if DEBUG > 1
 	std::cout << "What is the row offset of each triangle?" << std::endl;
 	for(int i = 0; i < numTri; i++)
@@ -577,18 +592,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	std::cout << std::endl;
 #endif
 
-	int num_rows = row_off[numTri-1] + rows[numTri-1];
-	
-	//Copy vectors to ArrayHandles
-	viskores::cont::ArrayHandleCast<viskores::Id, viskores::cont::ArrayHandle<int>> vtmp_row_off 
-		(viskores::cont::make_ArrayHandle(
-			thrust::raw_pointer_cast(row_off.data()), 
-			row_off.size(), 
-			viskores::CopyFlag::On));
-	viskores::cont::ArrayHandle<viskores::Id> vrow_off;
-	viskores::cont::ArrayCopy(vtmp_row_off, vrow_off);
-	viskores::cont::ArrayHandle<int> vrows = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(rows.data()), rows.size(), viskores::CopyFlag::On);
+	int num_rows = vrow_off.ReadPortal().Get(numTri-1) + vrows.ReadPortal().Get(numTri-1);
 
 	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<viskores::Id> vtri_ptr;
@@ -608,14 +612,6 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	std::cout << "The index of each row." << std::endl;
 	print_int_vec(row_ptr.begin(), row_ptr.end());
 #endif
-	//Copy vectors to ArrayHandles
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p2.data()), p2.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p3.data()), p3.size(), viskores::CopyFlag::On);
-
 	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<int> vcol_count;
 
