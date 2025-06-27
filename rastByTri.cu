@@ -578,16 +578,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #endif
 
 	int num_rows = row_off[numTri-1] + rows[numTri-1];
-
-	thrust::device_vector<int> tri_ptr(num_rows);
 	
-	expand_int(row_off.begin(), rows.begin(), tri_ptr.begin(), tri_ptr.end(), numTri);
-#if DEBUG > 2 
-	std::cout << "What triangle does each row belong to?" << std::endl;
-	for(int i = 0; i < num_rows; i++)
-		std::cout << tri_ptr[i] << " ";
-	std::cout << std::endl;	
-#endif
 	//Copy vectors to ArrayHandles
 	viskores::cont::ArrayHandleCast<viskores::Id, viskores::cont::ArrayHandle<int>> vtmp_row_off 
 		(viskores::cont::make_ArrayHandle(
@@ -596,15 +587,20 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 			viskores::CopyFlag::On));
 	viskores::cont::ArrayHandle<viskores::Id> vrow_off;
 	viskores::cont::ArrayCopy(vtmp_row_off, vrow_off);
+	viskores::cont::ArrayHandle<int> vrows = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(rows.data()), rows.size(), viskores::CopyFlag::On);
 
-	viskores::cont::ArrayHandleCast<viskores::Id, viskores::cont::ArrayHandle<int>> vtmp_tri_ptr 
-		(viskores::cont::make_ArrayHandle(
-			thrust::raw_pointer_cast(tri_ptr.data()), 
-			tri_ptr.size(), 
-			viskores::CopyFlag::On));
+	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<viskores::Id> vtri_ptr;
-	viskores::cont::ArrayCopy(vtmp_tri_ptr, vtri_ptr);
-
+	
+	vexpand(vrows, vtri_ptr);
+#if DEBUG > 2 
+	std::cout << "What triangle does each row belong to?" << std::endl;
+	for(int i = 0; i < num_rows; i++)
+		std::cout << tri_ptr[i] << " ";
+	std::cout << std::endl;	
+#endif
+	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<viskores::Id> vrow_ptr;
 
 	vindex(vtri_ptr, vrow_off, vrow_ptr);
