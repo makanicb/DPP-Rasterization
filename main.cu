@@ -248,8 +248,16 @@ int main(int argc, char **argv)
 #if DEBUG > 0
 	std::cout << "Finished Initialize Image" << std::endl;
 #endif
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p2.data()), p2.size(), viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p3.data()), p3.size(), viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vcolor = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(color.data()), color.size(), viskores::CopyFlag::On);
 
-	RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image);
+	RasterizeTriangles(vp1, vp2, vp3, vcolor, numTri, WIDTH, HEIGHT, final_image);
 
 #if DEBUG > 0
 	std::cout << "Finished Rasterize Triangles" << std::endl;
