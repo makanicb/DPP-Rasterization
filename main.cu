@@ -4,6 +4,7 @@
 #include <thrust/iterator/zip_iterator.h>
 
 #include <viskores/cont/Initialize.h>
+#include <viskores/cont/ArrayHandle.h>
 
 #include <iostream>
 #include <fstream>
@@ -14,8 +15,6 @@
 #include "rastByTri.h"
 #include "imageWriter.h"
 #include "readSTL.h"
-
-
 
 #ifndef DEBUG
 #define DEBUG 0
