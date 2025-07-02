@@ -67,10 +67,10 @@ void parseTriPair(const std::string &str, float &v1, float &v2, float &v3)
 	v3 = atoi(tok);
 }
 
-void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
-		thrust::device_vector<thrust::tuple<float,float,float>> &p2,
-		thrust::device_vector<thrust::tuple<float,float,float>> &p3,
-		thrust::device_vector<thrust::tuple<char,char,char>> &color,
+void readTriangles(viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p1,
+		viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p2,
+		viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p3,
+		viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> &color,
 		int &numTri, char *filename, int &width, int &height)
 {
 	std::cout << "Start Read Triangles" << std::endl;
@@ -81,27 +81,19 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	ss << l1;
 	ss >> numTri;
 	//resize the output vectors
-	p1.resize(numTri);
-	p2.resize(numTri);
-	p3.resize(numTri);
-	color.resize(numTri);
+	p1.Allocate(numTri);
+	p2.Allocate(numTri);
+	p3.Allocate(numTri);
+	color.Allocate(numTri);
 	//create reading vectors
 	//p1
-	thrust::host_vector<float> p11(numTri);
-	thrust::host_vector<float> p12(numTri);
-	thrust::host_vector<float> p13(numTri);
+	auto p1_Writer = p1.WritePortal();
 	//p2
-	thrust::host_vector<float> p21(numTri);
-	thrust::host_vector<float> p22(numTri);
-	thrust::host_vector<float> p23(numTri);
+	auto p2_Writer = p2.WritePortal();
 	//p3
-	thrust::host_vector<float> p31(numTri);
-	thrust::host_vector<float> p32(numTri);
-	thrust::host_vector<float> p33(numTri);
+	auto p3_Writer = p3.WritePortal();
 	//color
-	thrust::host_vector<char> c1(numTri);
-	thrust::host_vector<char> c2(numTri);
-	thrust::host_vector<char> c3(numTri);
+	auto color_Writer = color.WritePortal();
 	std::cout << numTri << " Triangles" << std::endl;
 	//parse file
 	//read contents into linear vectors
@@ -122,16 +114,12 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		parseTriPair(l1, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//color[i] = thrust::make_tuple<char,char,char>((char)v1,(char)v2,(char)v3);
-		c1[i] = char(v1);
-		c2[i] = char(v2);
-		c3[i] = char(v3);
+		color_Writer.Set(i, thrust::make_tuple(char(v1), char(v2), char(v3)));
 		//std::cout << "p1 " << l2 << std::endl;
 		parseTriPair(l2, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//p1[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
-		p11[i] = v1; //get the x position 
-		p12[i] = v2; //get the y position
-		p13[i] = v3; //get the z position
+		p1_Writer.Set(i, thrust::make_tuple(v1, v2, v3));
 		width = std::max(width, (int) v1 + 1); //update width
 		height = std::max(height, (int) v2 + 1); //update height
 		lowx = std::min(lowx, (int) v1); //update lowx
@@ -140,9 +128,8 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		parseTriPair(l3, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//p2[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
-		p21[i] = v1;
-		p22[i] = v2;
-		p23[i] = v3;
+		p2_Writer.Set(i, thrust::make_tuple(v1, v2, v3));
+		width = std::max(width, (int) v1 + 1); //update width
 		width = std::max(width, (int) v1 + 1);
 		height = std::max(height, (int) v2 + 1);
 		lowx = std::min(lowx, (int) v1);
@@ -151,9 +138,7 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		parseTriPair(l4, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//p3[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
-		p31[i] = v1;
-		p32[i] = v2;
-		p33[i] = v3;
+		p3_Writer.Set(i, thrust::make_tuple(v1, v2, v3));
 		width = std::max(width, (int) v1 + 1);
 		height = std::max(height, (int) v2 + 1);
 		lowx = std::min(lowx, (int) v1);
@@ -162,6 +147,7 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	}
 	fin.close();
 
+	/*
 	auto p1b = thrust::make_zip_iterator(thrust::make_tuple(p11.begin(), p12.begin(), p13.begin()));
 	auto p1e = thrust::make_zip_iterator(thrust::make_tuple(p11.end(), p12.end(), p13.end()));
 	thrust::copy(p1b, p1e, p1.begin());
@@ -174,6 +160,7 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	auto cb = thrust::make_zip_iterator(thrust::make_tuple(c1.begin(), c2.begin(), c3.begin()));
 	auto ce = thrust::make_zip_iterator(thrust::make_tuple(c1.end(), c2.end(), c3.end()));
 	thrust::copy(cb, ce, color.begin());
+	*/
 	width -= lowx;
 	height -= lowy;
 }
@@ -227,8 +214,17 @@ int main(int argc, char **argv)
 #if DEBUG > 1
 	std::cout << fileType << std::endl;
 #endif
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p2.data()), p2.size(), viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3 = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p3.data()), p3.size(), viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vcolor = 
+		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(color.data()), color.size(), viskores::CopyFlag::On);
+
 	if(strcmp(fileType, "tri") == 0)
-		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
+		readTriangles(vp1, vp2, vp3, vcolor, numTri, argv[1], WIDTH, HEIGHT);
 	else if(strcmp(fileType, "stl") == 0)
 		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT);
 	else
@@ -247,15 +243,6 @@ int main(int argc, char **argv)
 #if DEBUG > 0
 	std::cout << "Finished Initialize Image" << std::endl;
 #endif
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p2.data()), p2.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p3.data()), p3.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vcolor = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(color.data()), color.size(), viskores::CopyFlag::On);
-
 	RasterizeTriangles(vp1, vp2, vp3, vcolor, numTri, WIDTH, HEIGHT, final_image);
 
 #if DEBUG > 0
