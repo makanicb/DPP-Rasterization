@@ -91,13 +91,14 @@ unsigned int getNumTriSTL(char *filename)
 	return numTri;
 }
 
-int getColor(float* norm, thrust::tuple<char,char,char> &color)
+template<typename WritePortalType>
+int getColor(float* norm, WritePortalType &color, int index)
 {
 	float light[3] = {0, 0, 1};
 	float mag = std::sqrt(norm[0] * norm[0] + norm[1] * norm[1] + norm[2] * norm[2]);
 	float dot = (norm[0] * light[0] + norm[1] * light[1] + norm[2] * light[2]) / mag;
 	dot = std::max(dot, 0.0f);
-	color = thrust::make_tuple((char)(255 * dot), (char)(255 * dot), (char)(255 * dot));
+	color.Set(index, thrust::make_tuple((char)(255 * dot), (char)(255 * dot), (char)(255 * dot)));
 	/*if(dot > 1)
 	{
 		std::cout << std::endl;
@@ -126,19 +127,24 @@ int getColor(float* norm, thrust::tuple<char,char,char> &color)
 */
 
 unsigned int readTriFromBinarySTL(
-	thrust::device_vector<thrust::tuple<float,float,float>> &p1,
-	thrust::device_vector<thrust::tuple<float,float,float>> &p2,
-	thrust::device_vector<thrust::tuple<float,float,float>> &p3,
-	thrust::device_vector<thrust::tuple<char,char,char>> &color,
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p1,
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p2,
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p3,
+	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> &color,
 	char *filename, int &width, int &height)
 {
 	//get the number of triangles to read
 	unsigned int numTri = getNumTriSTL(filename);
-	//create host buffers to store data temporarily
-	thrust::host_vector<thrust::tuple<float,float,float>> hp1(numTri);
-	thrust::host_vector<thrust::tuple<float,float,float>> hp2(numTri);
-	thrust::host_vector<thrust::tuple<float,float,float>> hp3(numTri);
-	thrust::host_vector<thrust::tuple<char,char,char>> hcolor(numTri);
+	//resize arrays
+	p1.Allocate(numTri);
+	p2.Allocate(numTri);
+	p3.Allocate(numTri);
+	color.Allocate(numTri);
+	//create writers
+	auto p1_Writer = p1.WritePortal();
+	auto p2_Writer = p2.WritePortal();
+	auto p3_Writer = p3.WritePortal();
+	auto color_Writer = color.WritePortal();
 	//open the file
 	FILE *f = fopen(filename, "r");
 	//go to the start of the triangle information
@@ -191,22 +197,17 @@ unsigned int readTriFromBinarySTL(
 		fread(&attr, 2, 1, f);
 		//process buffers
 		//std::cout << v1[0] - lowx << ", " << v1[1] - lowy << ", " << v1[2] << std::endl;
-		hp1[i] = thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]);
+		p1_Writer.Set(i, thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]));
 		//std::cout << v2[0] - lowx << ", " << v2[1] - lowy << ", " << v2[2] << std::endl;
-		hp2[i] = thrust::make_tuple(v2[0] - lowx, v2[1] - lowy, v2[2]);
+		p2_Writer.Set(i, thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]));
 		//std::cout << v3[0] - lowx << ", " << v3[1] - lowy << ", " << v3[2] << std::endl;
-		hp3[i] = thrust::make_tuple(v3[0] - lowx, v3[1] - lowy, v3[2]);
-		getColor(norm, hcolor[i]);
+		p3_Writer.Set(i, thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]));
+		getColor(norm, color_Writer, i);
 	}
 	//std::cout << std::endl;
 
 	//copy host vectors into device vectors
 	//thrust::copy(p1.begin(), p1.end(), hp1.begin());
-	p1 = hp1;
-	p2 = hp2;
-	p3 = hp3;
-	color = hcolor;
-
 	return i;
 }
 

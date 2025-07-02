@@ -214,21 +214,22 @@ int main(int argc, char **argv)
 #if DEBUG > 1
 	std::cout << fileType << std::endl;
 #endif
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p1.data()), p1.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p2.data()), p2.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3 = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(p3.data()), p3.size(), viskores::CopyFlag::On);
-	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vcolor = 
-		viskores::cont::make_ArrayHandle(thrust::raw_pointer_cast(color.data()), color.size(), viskores::CopyFlag::On);
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1; 
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2;
+	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3;
+	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vcolor;
 
 	if(strcmp(fileType, "tri") == 0)
 		readTriangles(vp1, vp2, vp3, vcolor, numTri, argv[1], WIDTH, HEIGHT);
 	else if(strcmp(fileType, "stl") == 0)
-		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT);
+		numTri = readTriFromBinarySTL(vp1, vp2, vp3, vcolor, argv[1], WIDTH, HEIGHT);
 	else
 		return -1;
+
+	std::cout << "P1 LENGTH: " << vp1.GetNumberOfValues() << std::endl;
+	std::cout << "P2 LENGTH: " << vp2.GetNumberOfValues() << std::endl;
+	std::cout << "P3 LENGTH: " << vp3.GetNumberOfValues() << std::endl;
+	std::cout << "COLOR LENGTH: " << vcolor.GetNumberOfValues() << std::endl;
 
 #if DEBUG > 0
 	std::cout << "Finished Read Triangles" << std::endl;
