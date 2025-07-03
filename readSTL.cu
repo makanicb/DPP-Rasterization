@@ -7,6 +7,9 @@
 #include <thrust/tuple.h>
 #include <thrust/copy.h>
 
+#include<viskores/cont/ArrayHandle.h>
+#include<viskores/Types.h>
+
 #include "readSTL.h"
 
 /*
@@ -98,7 +101,7 @@ int getColor(float* norm, WritePortalType &color, int index)
 	float mag = std::sqrt(norm[0] * norm[0] + norm[1] * norm[1] + norm[2] * norm[2]);
 	float dot = (norm[0] * light[0] + norm[1] * light[1] + norm[2] * light[2]) / mag;
 	dot = std::max(dot, 0.0f);
-	color.Set(index, thrust::make_tuple((char)(255 * dot), (char)(255 * dot), (char)(255 * dot)));
+	color.Set(index, viskores::make_Vec((char)(255 * dot), (char)(255 * dot), (char)(255 * dot)));
 	/*if(dot > 1)
 	{
 		std::cout << std::endl;
@@ -127,10 +130,10 @@ int getColor(float* norm, WritePortalType &color, int index)
 */
 
 unsigned int readTriFromBinarySTL(
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p1,
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p2,
-	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p3,
-	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> &color,
+	viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
+	viskores::cont::ArrayHandle<viskores::Vec3f> &p2,
+	viskores::cont::ArrayHandle<viskores::Vec3f> &p3,
+	viskores::cont::ArrayHandle<viskores::Vec3ui_8> &color,
 	char *filename, int &width, int &height)
 {
 	//get the number of triangles to read
@@ -197,11 +200,11 @@ unsigned int readTriFromBinarySTL(
 		fread(&attr, 2, 1, f);
 		//process buffers
 		//std::cout << v1[0] - lowx << ", " << v1[1] - lowy << ", " << v1[2] << std::endl;
-		p1_Writer.Set(i, thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]));
+		p1_Writer.Set(i, viskores::make_Vec(v1[0] - lowx, v1[1] - lowy, v1[2]));
 		//std::cout << v2[0] - lowx << ", " << v2[1] - lowy << ", " << v2[2] << std::endl;
-		p2_Writer.Set(i, thrust::make_tuple(v2[0] - lowx, v2[1] - lowy, v2[2]));
+		p2_Writer.Set(i, viskores::make_Vec(v2[0] - lowx, v2[1] - lowy, v2[2]));
 		//std::cout << v3[0] - lowx << ", " << v3[1] - lowy << ", " << v3[2] << std::endl;
-		p3_Writer.Set(i, thrust::make_tuple(v3[0] - lowx, v3[1] - lowy, v3[2]));
+		p3_Writer.Set(i, viskores::make_Vec(v3[0] - lowx, v3[1] - lowy, v3[2]));
 		getColor(norm, color_Writer, i);
 	}
 	//std::cout << std::endl;

@@ -254,20 +254,23 @@ int main(int argc, char **argv)
 	if(strcmp(fileType, "tri") == 0)
 	{
 		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
-		convertVecToTupleFloat(p1, vp1);
-		convertVecToTupleFloat(p2, vp2);
-		convertVecToTupleFloat(p3, vp3);
-		convertVecToTupleChar(color, vcolor);
 	}
 	else if(strcmp(fileType, "stl") == 0)
-		numTri = readTriFromBinarySTL(vp1, vp2, vp3, vcolor, argv[1], WIDTH, HEIGHT);
+		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT);
 	else
 		return -1;
 
+	convertVecToTupleFloat(p1, vp1);
+	convertVecToTupleFloat(p2, vp2);
+	convertVecToTupleFloat(p3, vp3);
+	convertVecToTupleChar(color, vcolor);
+
+	/*
 	std::cout << "P1 LENGTH: " << vp1.GetNumberOfValues() << std::endl;
 	std::cout << "P2 LENGTH: " << vp2.GetNumberOfValues() << std::endl;
 	std::cout << "P3 LENGTH: " << vp3.GetNumberOfValues() << std::endl;
 	std::cout << "COLOR LENGTH: " << vcolor.GetNumberOfValues() << std::endl;
+	*/
 
 #if DEBUG > 0
 	std::cout << "Finished Read Triangles" << std::endl;
@@ -282,7 +285,7 @@ int main(int argc, char **argv)
 #if DEBUG > 0
 	std::cout << "Finished Initialize Image" << std::endl;
 #endif
-	RasterizeTriangles(vp1, vp2, vp3, vcolor, numTri, WIDTH, HEIGHT, final_image);
+	RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image);
 
 #if DEBUG > 0
 	std::cout << "Finished Rasterize Triangles" << std::endl;
