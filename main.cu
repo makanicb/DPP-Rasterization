@@ -164,6 +164,20 @@ void readTriangles(viskores::cont::ArrayHandle<thrust::tuple<float,float,float>>
 	width -= lowx;
 	height -= lowy;
 }
+
+void convertArrayHandleToThrustVectorFloat(const viskores::cont::ArrayHandle<viskores::Vec3f> &in,
+		viskores::cont::ArrayHandle<thrust::tuple<float, float, float>> &out)
+{
+	viskores::Id len = in.GetNumberOfValues();
+	auto in_read = in.ReadPortal();
+	auto out_write = out.WritePortal();
+
+	for(viskores::Id i = 0; i < len; i++)
+	{
+		viskores::Vec3f vec = in_read.Get(i);
+		out_write.Set(i, thrust::make_tuple(vec[0], vec[1], vec[2]));
+	}
+}
 	
 
 int main(int argc, char **argv)
@@ -184,10 +198,10 @@ int main(int argc, char **argv)
 #if DEBUG > 0
 	std::cout << "initialize triangles" << std::endl;
 #endif
-	thrust::device_vector<thrust::tuple<float, float, float>> p1;
-	thrust::device_vector<thrust::tuple<float, float, float>> p2;
-	thrust::device_vector<thrust::tuple<float, float, float>> p3;
-	thrust::device_vector<thrust::tuple<char, char, char>> color;
+	viskores::cont::ArrayHandle<viskores::Vec3f> p1;
+	viskores::cont::ArrayHandle<viskores::Vec3f> p2;
+	viskores::cont::ArrayHandle<viskores::Vec3f> p3;
+	viskores::cont::ArrayHandle<viskores::Vec3ui_8> color;
 
 	/*p1[0] = thrust::make_tuple(0,0,0);
 	p2[0] = thrust::make_tuple(5,5,0);
@@ -226,10 +240,12 @@ int main(int argc, char **argv)
 	else
 		return -1;
 
+	/*
 	std::cout << "P1 LENGTH: " << vp1.GetNumberOfValues() << std::endl;
 	std::cout << "P2 LENGTH: " << vp2.GetNumberOfValues() << std::endl;
 	std::cout << "P3 LENGTH: " << vp3.GetNumberOfValues() << std::endl;
 	std::cout << "COLOR LENGTH: " << vcolor.GetNumberOfValues() << std::endl;
+	*/
 
 #if DEBUG > 0
 	std::cout << "Finished Read Triangles" << std::endl;
