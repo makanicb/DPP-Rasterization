@@ -1,7 +1,9 @@
+/*
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/copy.h>
 #include <thrust/iterator/zip_iterator.h>
+*/
 
 #include <viskores/cont/Initialize.h>
 #include <viskores/cont/ArrayHandle.h>
@@ -166,6 +168,7 @@ void readTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	height -= lowy;
 }
 
+/*
 void convertVecToTupleFloat(const viskores::cont::ArrayHandle<viskores::Vec3f> &in,
 		viskores::cont::ArrayHandle<thrust::tuple<float, float, float>> &out)
 {
@@ -181,7 +184,9 @@ void convertVecToTupleFloat(const viskores::cont::ArrayHandle<viskores::Vec3f> &
 		out_write.Set(i, thrust::make_tuple(vec[0], vec[1], vec[2]));
 	}
 }
+*/
 	
+/*
 void convertVecToTupleChar(const viskores::cont::ArrayHandle<viskores::Vec3ui_8> &in,
 		viskores::cont::ArrayHandle<thrust::tuple<char, char, char>> &out)
 {
@@ -197,6 +202,7 @@ void convertVecToTupleChar(const viskores::cont::ArrayHandle<viskores::Vec3ui_8>
 		out_write.Set(i, thrust::make_tuple((char)vec[0], (char)vec[1], (char)vec[2]));
 	}
 }
+*/
 
 int main(int argc, char **argv)
 {
@@ -246,10 +252,12 @@ int main(int argc, char **argv)
 #if DEBUG > 1
 	std::cout << fileType << std::endl;
 #endif
+	/*
 	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp1; 
 	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp2;
 	viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> vp3;
 	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vcolor;
+	*/
 
 	if(strcmp(fileType, "tri") == 0)
 	{
@@ -260,10 +268,12 @@ int main(int argc, char **argv)
 	else
 		return -1;
 
+	/*
 	convertVecToTupleFloat(p1, vp1);
 	convertVecToTupleFloat(p2, vp2);
 	convertVecToTupleFloat(p3, vp3);
 	convertVecToTupleChar(color, vcolor);
+	*/
 
 	/*
 	std::cout << "P1 LENGTH: " << vp1.GetNumberOfValues() << std::endl;

@@ -54,7 +54,7 @@ struct my_maximum
 	{
 		return lhs > rhs ? lhs : rhs;
 	}
-}
+};
 
 struct ExpandWorklet : viskores::worklet::WorkletMapField
 {
