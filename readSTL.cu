@@ -41,7 +41,7 @@ int readBinarySTL (char *filename)
 	float vert2[3];
 	float vert3[3];
 	short attr;
-	for (int i = 0; i < numTri; i++)
+	for (unsigned int i = 0; i < numTri; i++)
 	{
 		//read into the buffers
 		fread(normal, 4, 3, f);
