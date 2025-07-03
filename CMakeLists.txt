@@ -12,12 +12,12 @@ find_package(Viskores REQUIRED)
 # find_package(Thrust REQUIRED CONFIG)
 # thrust_create_target(Thrust HOST CPP DEVICE OMP)
 
-find_package(OpenMP REQUIRED)
+# find_package(OpenMP REQUIRED)
 
 file(GLOB SRC_FILES *.cpp)
 
 add_executable(rast ${SRC_FILES})
 target_include_directories(rast PRIVATE .)
-target_link_libraries(rast OpenMP::OpenMP_CXX viskores::cont viskores::worklet)
-target_compile_options(rast PRIVATE $<$<COMPILE_LANGUAGE:CUDA>:--extended-lambda -g -G -O0 -W>)
+target_link_libraries(rast viskores::cont viskores::worklet)
+target_compile_options(rast PRIVATE -g -O0 -W)
 target_compile_definitions(rast PRIVATE -DDEBUG=1)
