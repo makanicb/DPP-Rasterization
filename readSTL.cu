@@ -199,9 +199,9 @@ unsigned int readTriFromBinarySTL(
 		//std::cout << v1[0] - lowx << ", " << v1[1] - lowy << ", " << v1[2] << std::endl;
 		p1_Writer.Set(i, thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]));
 		//std::cout << v2[0] - lowx << ", " << v2[1] - lowy << ", " << v2[2] << std::endl;
-		p2_Writer.Set(i, thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]));
+		p2_Writer.Set(i, thrust::make_tuple(v2[0] - lowx, v2[1] - lowy, v2[2]));
 		//std::cout << v3[0] - lowx << ", " << v3[1] - lowy << ", " << v3[2] << std::endl;
-		p3_Writer.Set(i, thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]));
+		p3_Writer.Set(i, thrust::make_tuple(v3[0] - lowx, v3[1] - lowy, v3[2]));
 		getColor(norm, color_Writer, i);
 	}
 	//std::cout << std::endl;
