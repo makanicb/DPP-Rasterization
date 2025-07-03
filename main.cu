@@ -256,7 +256,7 @@ int main(int argc, char **argv)
 		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
 		convertVecToTupleFloat(p1, vp1);
 		convertVecToTupleFloat(p2, vp2);
-		convertVecToTupleFloat(p2, vp2);
+		convertVecToTupleFloat(p3, vp3);
 		convertVecToTupleChar(color, vcolor);
 	}
 	else if(strcmp(fileType, "stl") == 0)
@@ -264,12 +264,10 @@ int main(int argc, char **argv)
 	else
 		return -1;
 
-	/*
 	std::cout << "P1 LENGTH: " << vp1.GetNumberOfValues() << std::endl;
 	std::cout << "P2 LENGTH: " << vp2.GetNumberOfValues() << std::endl;
 	std::cout << "P3 LENGTH: " << vp3.GetNumberOfValues() << std::endl;
 	std::cout << "COLOR LENGTH: " << vcolor.GetNumberOfValues() << std::endl;
-	*/
 
 #if DEBUG > 0
 	std::cout << "Finished Read Triangles" << std::endl;
