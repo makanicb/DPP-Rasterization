@@ -5,6 +5,7 @@
 
 #include <viskores/cont/Initialize.h>
 #include <viskores/cont/ArrayHandle.h>
+#include <viskores/Types.h>
 
 #include <iostream>
 #include <fstream>
@@ -67,10 +68,10 @@ void parseTriPair(const std::string &str, float &v1, float &v2, float &v3)
 	v3 = atoi(tok);
 }
 
-void readTriangles(viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p1,
-		viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p2,
-		viskores::cont::ArrayHandle<thrust::tuple<float,float,float>> &p3,
-		viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> &color,
+void readTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
+		viskores::cont::ArrayHandle<viskores::Vec3f> &p2,
+		viskores::cont::ArrayHandle<viskores::Vec3f> &p3,
+		viskores::cont::ArrayHandle<viskores::Vec3ui_8> &color,
 		int &numTri, char *filename, int &width, int &height)
 {
 	std::cout << "Start Read Triangles" << std::endl;
@@ -114,12 +115,12 @@ void readTriangles(viskores::cont::ArrayHandle<thrust::tuple<float,float,float>>
 		parseTriPair(l1, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//color[i] = thrust::make_tuple<char,char,char>((char)v1,(char)v2,(char)v3);
-		color_Writer.Set(i, thrust::make_tuple(char(v1), char(v2), char(v3)));
+		color_Writer.Set(i, viskores::make_Vec(char(v1), char(v2), char(v3)));
 		//std::cout << "p1 " << l2 << std::endl;
 		parseTriPair(l2, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//p1[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
-		p1_Writer.Set(i, thrust::make_tuple(v1, v2, v3));
+		p1_Writer.Set(i, viskores::make_Vec(v1, v2, v3));
 		width = std::max(width, (int) v1 + 1); //update width
 		height = std::max(height, (int) v2 + 1); //update height
 		lowx = std::min(lowx, (int) v1); //update lowx
@@ -128,7 +129,7 @@ void readTriangles(viskores::cont::ArrayHandle<thrust::tuple<float,float,float>>
 		parseTriPair(l3, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//p2[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
-		p2_Writer.Set(i, thrust::make_tuple(v1, v2, v3));
+		p2_Writer.Set(i, viskores::make_Vec(v1, v2, v3));
 		width = std::max(width, (int) v1 + 1); //update width
 		width = std::max(width, (int) v1 + 1);
 		height = std::max(height, (int) v2 + 1);
@@ -138,7 +139,7 @@ void readTriangles(viskores::cont::ArrayHandle<thrust::tuple<float,float,float>>
 		parseTriPair(l4, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//p3[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
-		p3_Writer.Set(i, thrust::make_tuple(v1, v2, v3));
+		p3_Writer.Set(i, viskores::make_Vec(v1, v2, v3));
 		width = std::max(width, (int) v1 + 1);
 		height = std::max(height, (int) v2 + 1);
 		lowx = std::min(lowx, (int) v1);
@@ -165,11 +166,13 @@ void readTriangles(viskores::cont::ArrayHandle<thrust::tuple<float,float,float>>
 	height -= lowy;
 }
 
-void convertArrayHandleToThrustVectorFloat(const viskores::cont::ArrayHandle<viskores::Vec3f> &in,
+void convertVecToTupleFloat(const viskores::cont::ArrayHandle<viskores::Vec3f> &in,
 		viskores::cont::ArrayHandle<thrust::tuple<float, float, float>> &out)
 {
 	viskores::Id len = in.GetNumberOfValues();
 	auto in_read = in.ReadPortal();
+
+	out.Allocate(len);
 	auto out_write = out.WritePortal();
 
 	for(viskores::Id i = 0; i < len; i++)
@@ -179,6 +182,21 @@ void convertArrayHandleToThrustVectorFloat(const viskores::cont::ArrayHandle<vis
 	}
 }
 	
+void convertVecToTupleChar(const viskores::cont::ArrayHandle<viskores::Vec3ui_8> &in,
+		viskores::cont::ArrayHandle<thrust::tuple<char, char, char>> &out)
+{
+	viskores::Id len = in.GetNumberOfValues();
+	auto in_read = in.ReadPortal();
+
+	out.Allocate(len);
+	auto out_write = out.WritePortal();
+
+	for(viskores::Id i = 0; i < len; i++)
+	{
+		viskores::Vec3f vec = in_read.Get(i);
+		out_write.Set(i, thrust::make_tuple((char)vec[0], (char)vec[1], (char)vec[2]));
+	}
+}
 
 int main(int argc, char **argv)
 {
@@ -234,7 +252,13 @@ int main(int argc, char **argv)
 	viskores::cont::ArrayHandle<thrust::tuple<char,char,char>> vcolor;
 
 	if(strcmp(fileType, "tri") == 0)
-		readTriangles(vp1, vp2, vp3, vcolor, numTri, argv[1], WIDTH, HEIGHT);
+	{
+		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
+		convertVecToTupleFloat(p1, vp1);
+		convertVecToTupleFloat(p2, vp2);
+		convertVecToTupleFloat(p2, vp2);
+		convertVecToTupleChar(color, vcolor);
+	}
 	else if(strcmp(fileType, "stl") == 0)
 		numTri = readTriFromBinarySTL(vp1, vp2, vp3, vcolor, argv[1], WIDTH, HEIGHT);
 	else
