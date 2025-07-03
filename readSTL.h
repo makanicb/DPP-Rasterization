@@ -1,7 +1,7 @@
 #ifndef READ_STL
 #define READ_STL
 
-#include <thrust/tuple.h>
+//#include <thrust/tuple.h>
 
 #include <viskores/cont/ArrayHandle.h>
 #include <viskores/Types.h>

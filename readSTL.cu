@@ -2,10 +2,12 @@
 #include <cstdio>
 #include <iostream>
 #include <limits>
+/*
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/tuple.h>
 #include <thrust/copy.h>
+*/
 
 #include<viskores/cont/ArrayHandle.h>
 #include<viskores/Types.h>

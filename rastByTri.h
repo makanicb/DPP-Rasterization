@@ -1,6 +1,6 @@
 #ifndef RAST_BY_TRI
 #define RAST_BY_TRI
-#include <thrust/device_vector.h>
+//#include <thrust/device_vector.h>
 #include <viskores/cont/ArrayHandle.h>
 #include <viskores/Types.h>
 #include "imageWriter.h"

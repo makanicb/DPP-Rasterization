@@ -4,6 +4,7 @@
 #include <limits>
 #include <chrono>
 
+/*
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 #include <thrust/iterator/zip_iterator.h>
@@ -23,6 +24,7 @@
 #include <thrust/reduce.h>
 #include <thrust/sort.h>
 #include <thrust/unique.h>
+*/
 
 #include <viskores/cont/Algorithm.h>
 #include <viskores/cont/ArrayCopy.h>
@@ -44,6 +46,15 @@
 #ifndef DEBUG
 #define DEBUG 0 
 #endif
+
+template<typename T>
+struct my_maximum
+{
+	T operator()(const T &lhs, const T &rhs) const
+	{
+		return lhs > rhs ? lhs : rhs;
+	}
+}
 
 struct ExpandWorklet : viskores::worklet::WorkletMapField
 {
@@ -302,6 +313,7 @@ struct ColCount : viskores::worklet::WorkletMapField
     of the supergroup where the value at an elements indice
     is the index of the group it belongs to.
 */
+/*
 void expand_int
 	(thrust::device_vector<int>::iterator map,
 	 thrust::device_vector<int>::iterator pred,
@@ -322,6 +334,7 @@ void expand_int
 		 start,
 		 thrust::maximum<int>());
 }	
+*/
 
 /*
    Take a list of values and a list of counts,
@@ -378,6 +391,7 @@ void vexpand(viskores::cont::ArrayHandle<CountT> &counts,
    index_int generates a list where the value at an
    element's index is its index within its group.
 */
+/*
 void index_int
 	(thrust::device_vector<int>::iterator map,
 	 thrust::device_vector<int>::iterator src,
@@ -391,6 +405,7 @@ void index_int
 		 out,
 		 thrust::minus<int>());
 }
+*/
 
 /*
    Let map be a list associating elements to their
@@ -411,7 +426,7 @@ void vindex
 		 out, std::minus<ValueType>());
 }
 
-
+/*
 void print_int_vec(thrust::device_vector<int>::iterator start,
 		   thrust::device_vector<int>::iterator end)
 {
@@ -419,7 +434,9 @@ void print_int_vec(thrust::device_vector<int>::iterator start,
 		std::cout << *start << " ";
 	std::cout << std::endl;
 }
+*/
 
+/*
 void print_pair_vec(thrust::device_vector<thrust::pair<int,int>>::iterator start,
 		    thrust::device_vector<thrust::pair<int,int>>::iterator end)
 {
@@ -430,7 +447,9 @@ void print_pair_vec(thrust::device_vector<thrust::pair<int,int>>::iterator start
 	}
 	std::cout << std::endl;
 }
+*/
 
+/*
 void print_float_vec(thrust::device_vector<float>::iterator start,
 		     thrust::device_vector<float>::iterator end)
 {
@@ -438,6 +457,7 @@ void print_float_vec(thrust::device_vector<float>::iterator start,
 		std::cout << *start << " ";
 	std::cout << std::endl;
 }
+*/
 
 template<typename T>
 void print_ArrayHandle(const viskores::cont::ArrayHandle<T> &arr)
@@ -446,6 +466,22 @@ void print_ArrayHandle(const viskores::cont::ArrayHandle<T> &arr)
 	for (viskores::Id i = 0; i < arr_Reader.GetNumberOfValues(); i++)
 	{
 		std::cout << arr_Reader.Get(i) << "\t";
+	}
+	std::cout << std::endl;
+}
+
+template<typename VecType>
+void print_VecArray(const viskores::cont::ArrayHandle<VecType> &arr, const viskores::Id len)
+{
+	auto arr_Reader = arr.ReadPortal();
+	for (viskores::Id i = 0; i < arr_Reader.GetNumberOfValues(); i++)
+	{
+		VecType vec = arr_Reader.Get(i);
+		std::cout << "( ";
+		for (viskores::Id j = 0; j < len; j++)
+			std::cout << vec[j] << " ";
+		std::cout << ")\t";
+
 	}
 	std::cout << std::endl;
 }
@@ -463,6 +499,7 @@ struct key_equality
 };
 */
 
+/*
 struct findPositions
 {
 	thrust::device_vector<thrust::pair<int,int>>::iterator start;
@@ -479,6 +516,7 @@ struct findPositions
 		thrust::get<1>(t) = (int)(thrust::find(start, stop, pos) - start);
 	}
 };
+*/
 
 struct ToRowMajor : viskores::worklet::WorkletMapField
 {
@@ -502,7 +540,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		int numTri, int width, int height, Image &final_image)
 {
 	//Set up timing systems
-	thrust::host_vector<std::chrono::time_point<std::chrono::high_resolution_clock>> timer;
+	std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> timer;
 	//time: function start
 	timer.push_back(std::chrono::high_resolution_clock::now());	
 	
@@ -526,14 +564,14 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if DEBUG > 1 
 	std::cout << "# frags by triange: " << std::endl;
-	print_int_vec(frags.begin(), frags.end());
+	print_ArrayHandle(frags);
 #endif
 	viskores::cont::ArrayHandle<viskores::Id> write_index;
 	viskores::cont::Algorithm::ScanExclusive(viskores::cont::make_ArrayHandleCast<viskores::Id>(frags),
 			write_index);
 #if DEBUG > 1
 	std::cout << "write position by triange: " << std::endl;
-	print_int_vec(write_index.begin(), write_index.end());
+	print_ArrayHandle(write_index);
 #endif
 
 	int fragments = write_index.ReadPortal().Get(numTri-1) + frags.ReadPortal().Get(numTri-1);
@@ -548,7 +586,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	vexpand(frags, frag_tri);
 #if DEBUG > 3
 	std::cout << "Which triangle does each fragment belong to?" << std::endl;
-	print_int_vec(frag_tri.begin(), frag_tri.end());
+	print_ArrayHandle(frag_tri);
 #endif
 /*
 	thrust::scatter_if
@@ -578,17 +616,13 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	invoke(rowCount, p1, p2, p3, rows);
 #if DEBUG > 1
 	std::cout << "How many rows does each triangle have?" << std::endl;
-	for(int i = 0; i < numTri; i++)
-		std::cout << rows[i] << " ";
-	std::cout << std::endl;
+	print_ArrayHandle(rows);
 #endif
 	viskores::cont::ArrayHandle<viskores::Id> row_off;
 	viskores::cont::Algorithm::ScanExclusive(viskores::cont::make_ArrayHandleCast<viskores::Id>(rows), row_off);
 #if DEBUG > 1
 	std::cout << "What is the row offset of each triangle?" << std::endl;
-	for(int i = 0; i < numTri; i++)
-		std::cout << row_off[i] << " ";
-	std::cout << std::endl;
+	print_ArrayHandle(row_off);
 #endif
 
 	int num_rows = row_off.ReadPortal().Get(numTri-1) + rows.ReadPortal().Get(numTri-1);
@@ -599,9 +633,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	vexpand(rows, tri_ptr);
 #if DEBUG > 2 
 	std::cout << "What triangle does each row belong to?" << std::endl;
-	for(int i = 0; i < num_rows; i++)
-		std::cout << tri_ptr[i] << " ";
-	std::cout << std::endl;	
+	print_ArrayHandle(tri_ptr);
 #endif
 	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<viskores::Id> row_ptr;
@@ -609,7 +641,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	vindex(tri_ptr, row_off, row_ptr);
 #if DEBUG > 2 
 	std::cout << "The index of each row." << std::endl;
-	print_int_vec(row_ptr.begin(), row_ptr.end());
+	print_ArrayHandle(row_ptr);
 #endif
 	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<int> col_count;
@@ -625,7 +657,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	);
 #if DEBUG > 2
 	std::cout << "How many columns does each row have?" << std::endl;
-	print_int_vec(col_count.begin(), col_count.end());
+	print_ArrayHandle(col_count);
 #endif
 	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<viskores::Id> col_off;
@@ -634,8 +666,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		(viskores::cont::make_ArrayHandleCast<viskores::Id>(col_count), col_off);
 #if DEBUG > 2 
 	std::cout << "Column offsets by row" << std::endl;
-	print_int_vec(col_off.begin(), col_off.end());
-	std::cout << "Number of columns " <<  col_off[num_rows-1] + col_count[num_rows-1] << std::endl;
+	print_ArrayHandle(col_off);
+	std::cout << "Number of columns " <<  col_off.ReadPortal.Get(num_rows-1) + 
+		col_count.ReadPortal.Get(num_rows-1) << std::endl;
 #endif
 	assert((fragments == (int)col_off.ReadPortal().Get(num_rows-1) + (int)col_count.ReadPortal().Get(num_rows-1)));
 	//Initialize ArrayHandles
@@ -661,7 +694,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		(frag_row,
 		 viskores::cont::make_ArrayHandlePermutation(frag_tri, row_off),
 		 frag_row,
-		 thrust::minus<viskores::Id>());
+		 std::minus<viskores::Id>());
 	//std::cout << "Size of frag_row, frag_col: " <<
 	//	frag_row.GetNumberOfValues() << ", " <<
 	//	frag_col.GetNumberOfValues() << std::endl;
@@ -670,8 +703,8 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		 
 #if DEBUG > 3 
 	std::cout << "Frag positions by row and column in every triangle." << std::endl;
-	print_int_vec(frag_row.begin(), frag_row.end());
-	print_int_vec(frag_col.begin(), frag_col.end());
+	print_ArrayHandle(frag_row);
+	print_ArrayHandle(frag_col);
 #endif
 	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<viskores::Vec2i> pos;
@@ -716,8 +749,8 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if DEBUG > 3
 	std::cout << "Position and depth of fragments" << std::endl;
-	print_pair_vec(pos.begin(), pos.end());
-	print_float_vec(depth.begin(), depth.end());
+	print_VecArray(pos, 2);
+	print_ArrayHandle(depth);
 #endif
 	//Gather the color of each fragment
 	viskores::cont::ArrayHandlePermutation<viskores::cont::ArrayHandle<viskores::Id>, viskores::cont::ArrayHandle<viskores::Vec3ui_8>> frag_colors(frag_tri, color);
@@ -751,9 +784,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if DEBUG > 3
 	std::cout << "Sorted" << std::endl;
-	print_pair_vec(cpos.begin(), cpos.end());
-	print_int_vec(sorted_inds.begin(), sorted_inds.end());
-	print_float_vec(cdepth.begin(), cdepth.end());
+	print_VecArray(cpos, 2);
+	print_ArrayHandle(sorted_inds);
+	print_ArrayHandle(cdepth);
 #endif
 	//time: sorted fragments
 	timer.push_back(std::chrono::high_resolution_clock::now());
@@ -781,13 +814,13 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	viskores::cont::ArrayHandle<viskores::Vec2i> true_fragments;
 	viskores::cont::ArrayHandle<float> min_depth;
 	viskores::cont::ArrayHandle<int> pos_count;
-	viskores::cont::Algorithm::ReduceByKey(cpos, cdepth, true_fragments, min_depth, thrust::maximum<float>());
+	viskores::cont::Algorithm::ReduceByKey(cpos, cdepth, true_fragments, min_depth, my_maximum<float>());
 	viskores::cont::Algorithm::ReduceByKey(cpos, viskores::cont::make_ArrayHandleConstant<int>(1, fragments),
-		       true_fragments, pos_count, thrust::plus<int>());	
+		       true_fragments, pos_count, std::plus<int>());	
 
 #if DEBUG > 3
 	std::cout << "Number of duplicates at each unique position" << std::endl;
-	print_int_vec(pos_count.begin(), pos_count.end());
+	print_ArrayHandle(pos_count);
 #endif
 #if DEBUG > 0
 	std::cout << "\tGet the minimum depth of each unique position" << std::endl;
@@ -818,7 +851,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if DEBUG > 3
 	std::cout << "Min depth by fragment" << std::endl;
-	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
+	print_ArrayHandle(exp_min_depth);
 #endif
 /*
 	//std::cout << "Min depth" << std::endl;
@@ -841,14 +874,14 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 */
 #if DEBUG > 3
 	std::cout << "Min Depth at fragment position vs fragment depth" << std::endl;
-	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
-	print_float_vec(cdepth.begin(), cdepth.end());
+	print_ArrayHandle(exp_min_depth);
+	print_ArrayHandle(cdepth);
 #endif
 #if DEBUG > 0
 	std::cout << "\tchoose fragments to write" << std::endl;
 #endif
 	viskores::cont::ArrayHandle<bool> write_frag;
-	viskores::cont::Algorithm::Transform(exp_min_depth, cdepth, write_frag, thrust::equal_to<float>());
+	viskores::cont::Algorithm::Transform(exp_min_depth, cdepth, write_frag, std::equal_to<float>());
 
 	/*
 	//Convert ArrayHandles to Thrust vectors
@@ -907,9 +940,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if DEBUG > 3
 	std::cout << "Write fragment?" << std::endl;
-	for(int i = 0; i < fragments; i++)
-		std::cout << write_frag[i] << " ";
-	std::cout << std::endl;
+	print_ArrayHandle(write_frag);
 #endif
 	//time: got visible fragments
 	timer.push_back(std::chrono::high_resolution_clock::now());
@@ -928,7 +959,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if DEBUG > 3
 	std::cout << "Row major position by fragment" << std::endl;
-	print_int_vec(rowMajorPos.begin(), rowMajorPos.end());
+	print_ArrayHandle(rowMajorPos);
 #endif
 
 	//viskores::cont::ArrayHandle<viskores:Vec3ui_8> vbg;
