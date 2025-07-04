@@ -677,7 +677,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 	//Determine fragment rows and columns
 	vexpand(col_count, frag_row);
-	std::cout << "Frag Rows" << std::endl;
+	//std::cout << "Frag Rows" << std::endl;
 	//print_ArrayHandle(frag_row);
 
 	//temporary copies
