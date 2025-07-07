@@ -50,6 +50,7 @@
 template<typename T>
 struct my_maximum
 {
+	VISKORES_EXEC
 	T operator()(const T &lhs, const T &rhs) const
 	{
 		return lhs > rhs ? lhs : rhs;
@@ -965,7 +966,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//viskores::cont::ArrayHandle<viskores:Vec3ui_8> vbg;
 	//vbg.AllocateAndFill(width * height, thrust::make_tuple<char,char,char>(127,127,127));
 	viskores::cont::ArrayHandle<viskores::Vec3ui_8> img;
-	img.AllocateAndFill(width * height, viskores::make_Vec<viskores::UInt8>(127,127,127));
+	img.AllocateAndFill(width * height, viskores::make_Vec<viskores::UInt8>(255,255,255));
 	/*
 	std::cout << cfrag_colors.GetNumberOfValues() << std::endl;
 	std::cout << rowMajorPos.GetNumberOfValues() << std::endl;
