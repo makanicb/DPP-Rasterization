@@ -177,6 +177,13 @@ unsigned int readTriFromBinarySTL(
 		fread(v2, 4, 3, f);
 		fread(v3, 4, 3, f);
 		fread(&attr, 2, 1, f);
+		//scale vertices
+		for(int j = 0; j < 3; j++)
+		{
+			v1[j] *= scale;
+			v2[j] *= scale;
+			v3[j] *= scale;
+		}
 		//process buffers
 		width = std::max(width, std::max((int) v1[0], std::max((int) v2[0], (int) v3[0])) + 1);
 		height = std::max(height, std::max((int) v1[1], std::max((int) v2[1], (int) v3[1])) + 1);
@@ -186,9 +193,7 @@ unsigned int readTriFromBinarySTL(
 	// Move corner to origin
 	width -= lowx;
 	height -= lowy;
-	// Scale size
-	width *= scale;
-	height *= scale;
+	//std::cout << "W: " << width << " H: " << height << std::endl;
 	//std::cout << "LOWX: " << lowx << " LOWY: " << lowy << std::endl;
 
 	fseek(f, 84, SEEK_SET); //go back to the start of the file
@@ -204,6 +209,13 @@ unsigned int readTriFromBinarySTL(
 		fread(v2, 4, 3, f);
 		fread(v3, 4, 3, f);
 		fread(&attr, 2, 1, f);
+		//scale vertices
+		for(int j = 0; j < 3; j++)
+		{
+			v1[j] *= scale;
+			v2[j] *= scale;
+			v3[j] *= scale;
+		}
 		//process buffers
 		//std::cout << v1[0] - lowx << ", " << v1[1] - lowy << ", " << v1[2] << std::endl;
 		p1_Writer.Set(i, viskores::make_Vec(v1[0] - lowx, v1[1] - lowy, v1[2]));
@@ -214,19 +226,6 @@ unsigned int readTriFromBinarySTL(
 		getColor(norm, color_Writer, i);
 	}
 	//std::cout << std::endl;
-
-	//Create readers
-	auto p1_Reader = p1.ReadPortal();
-	auto p2_Reader = p2.ReadPortal();
-	auto p3_Reader = p3.ReadPortal();
-
-	// Scale triangles
-	for(i = 0; i < numTri; i++)
-	{
-		p1_Writer.Set(i, p1_Reader.Get(i) * scale);
-		p2_Writer.Set(i, p2_Reader.Get(i) * scale);
-		p3_Writer.Set(i, p3_Reader.Get(i) * scale);
-	}
 
 	//copy host vectors into device vectors
 	//thrust::copy(p1.begin(), p1.end(), hp1.begin());
