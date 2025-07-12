@@ -209,10 +209,15 @@ int main(int argc, char **argv)
 	//initialize viskores
 	viskores::cont::Initialize(argc, argv, viskores::cont::InitializeOptions::AddHelp);
 
+	int scale = 1;
 	if(argc < 3)
 	{
 		std::cerr << "USAGE: rast <input> <output> " << std::endl;
 		exit(EXIT_FAILURE);
+	}
+	else if (argc > 3) // Get scale if given
+	{
+		scale = atoi(argv[3]);
 	}
 
 	//create width and height variables
@@ -264,7 +269,7 @@ int main(int argc, char **argv)
 		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
 	}
 	else if(strcmp(fileType, "stl") == 0)
-		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT, 4);
+		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT, scale);
 	else
 		return -1;
 
