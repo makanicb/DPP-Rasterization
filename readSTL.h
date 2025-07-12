@@ -13,5 +13,6 @@ unsigned int readTriFromBinarySTL(
 		viskores::cont::ArrayHandle<viskores::Vec3f> &p2,
 		viskores::cont::ArrayHandle<viskores::Vec3f> &p3,
 		viskores::cont::ArrayHandle<viskores::Vec3ui_8> &color,
-		char *filename, int &width, int &height);
+		char *filename, int &width, int &height,
+		int scale);
 #endif

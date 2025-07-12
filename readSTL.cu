@@ -136,7 +136,7 @@ unsigned int readTriFromBinarySTL(
 	viskores::cont::ArrayHandle<viskores::Vec3f> &p2,
 	viskores::cont::ArrayHandle<viskores::Vec3f> &p3,
 	viskores::cont::ArrayHandle<viskores::Vec3ui_8> &color,
-	char *filename, int &width, int &height)
+	char *filename, int &width, int &height, int scale)
 {
 	//get the number of triangles to read
 	unsigned int numTri = getNumTriSTL(filename);
@@ -146,9 +146,9 @@ unsigned int readTriFromBinarySTL(
 	p3.Allocate(numTri);
 	color.Allocate(numTri);
 	//create writers
-	auto p1_Writer = p1.WritePortal();
-	auto p2_Writer = p2.WritePortal();
-	auto p3_Writer = p3.WritePortal();
+	auto p1_Writer = p1.ReadWritePortal();
+	auto p2_Writer = p2.ReadWritePortal();
+	auto p3_Writer = p3.ReadWritePortal();
 	auto color_Writer = color.WritePortal();
 	//open the file
 	FILE *f = fopen(filename, "r");
@@ -183,8 +183,12 @@ unsigned int readTriFromBinarySTL(
 		lowx = std::min(lowx, std::min((int) v1[0], std::min((int) v2[0], (int) v3[0])));
 		lowy = std::min(lowy, std::min((int) v1[1], std::min((int) v2[1], (int) v3[1])));
 	}
+	// Move corner to origin
 	width -= lowx;
 	height -= lowy;
+	// Scale size
+	width *= scale;
+	height *= scale;
 	//std::cout << "LOWX: " << lowx << " LOWY: " << lowy << std::endl;
 
 	fseek(f, 84, SEEK_SET); //go back to the start of the file
@@ -210,6 +214,14 @@ unsigned int readTriFromBinarySTL(
 		getColor(norm, color_Writer, i);
 	}
 	//std::cout << std::endl;
+
+	// Scale triangles
+	for(i = 0; i < numTri; i++)
+	{
+		p1_Writer.Set(i, p1_Writer.Get(i) * scale);
+		p2_Writer.Set(i, p2_Writer.Get(i) * scale);
+		p3_Writer.Set(i, p3_Writer.Get(i) * scale);
+	}
 
 	//copy host vectors into device vectors
 	//thrust::copy(p1.begin(), p1.end(), hp1.begin());

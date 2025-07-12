@@ -264,7 +264,7 @@ int main(int argc, char **argv)
 		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
 	}
 	else if(strcmp(fileType, "stl") == 0)
-		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT);
+		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT, 4);
 	else
 		return -1;
 
