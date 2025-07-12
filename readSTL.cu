@@ -146,9 +146,9 @@ unsigned int readTriFromBinarySTL(
 	p3.Allocate(numTri);
 	color.Allocate(numTri);
 	//create writers
-	auto p1_Writer = p1.ReadWritePortal();
-	auto p2_Writer = p2.ReadWritePortal();
-	auto p3_Writer = p3.ReadWritePortal();
+	auto p1_Writer = p1.WritePortal();
+	auto p2_Writer = p2.WritePortal();
+	auto p3_Writer = p3.WritePortal();
 	auto color_Writer = color.WritePortal();
 	//open the file
 	FILE *f = fopen(filename, "r");
@@ -215,12 +215,17 @@ unsigned int readTriFromBinarySTL(
 	}
 	//std::cout << std::endl;
 
+	//Create readers
+	auto p1_Reader = p1.ReadPortal();
+	auto p2_Reader = p2.ReadPortal();
+	auto p3_Reader = p3.ReadPortal();
+
 	// Scale triangles
 	for(i = 0; i < numTri; i++)
 	{
-		p1_Writer.Set(i, p1_Writer.Get(i) * scale);
-		p2_Writer.Set(i, p2_Writer.Get(i) * scale);
-		p3_Writer.Set(i, p3_Writer.Get(i) * scale);
+		p1_Writer.Set(i, p1_Reader.Get(i) * scale);
+		p2_Writer.Set(i, p2_Reader.Get(i) * scale);
+		p3_Writer.Set(i, p3_Reader.Get(i) * scale);
 	}
 
 	//copy host vectors into device vectors
