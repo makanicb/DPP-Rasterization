@@ -295,7 +295,8 @@ int main(int argc, char **argv)
 #if DEBUG > 0
 	std::cout << "Finished Initialize Image" << std::endl;
 #endif
-	RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image);
+	for(int i = 0; i < 10; i++)
+		RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image);
 
 #if DEBUG > 0
 	std::cout << "Finished Rasterize Triangles" << std::endl;
