@@ -14,6 +14,7 @@
 #include <sstream>
 #include <cstdlib>
 #include <string>
+#include <cmath>
 
 #include "rastByTri.h"
 #include "imageWriter.h"
@@ -83,11 +84,13 @@ void readTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	getline(fin, l1);
 	ss << l1;
 	ss >> numTri;
+	int subdivisions = 1;
+	int subdividedNumTri = numTri * pow(4, subdivisions);
 	//resize the output vectors
-	p1.Allocate(numTri);
-	p2.Allocate(numTri);
-	p3.Allocate(numTri);
-	color.Allocate(numTri);
+	p1.Allocate(subdividedNumTri);
+	p2.Allocate(subdividedNumTri);
+	p3.Allocate(subdividedNumTri);
+	color.Allocate(subdividedNumTri);
 	//create reading vectors
 	//p1
 	auto p1_Writer = p1.WritePortal();
@@ -166,6 +169,89 @@ void readTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	*/
 	width -= lowx;
 	height -= lowy;
+
+	// Subdivide
+	unsigned int curNumTri = numTri;
+	for (int j = 0; j < subdivisions; j++)
+	{
+		// Create temporary arrays to subdivide into
+		viskores::cont::ArrayHandle<viskores::Vec3f> tmp_p1;
+		viskores::cont::ArrayHandle<viskores::Vec3f> tmp_p2;
+		viskores::cont::ArrayHandle<viskores::Vec3f> tmp_p3;
+		viskores::cont::ArrayHandle<viskores::Vec3ui_8> tmp_color;
+
+		// Copy point arrays
+		tmp_p1.Allocate(subdividedNumTri);
+		tmp_p2.Allocate(subdividedNumTri);
+		tmp_p3.Allocate(subdividedNumTri);
+		tmp_color.Allocate(subdividedNumTri);
+
+		// Create readers
+		auto p1_Reader = p1.ReadPortal();
+		auto p2_Reader = p2.ReadPortal();
+		auto p3_Reader = p3.ReadPortal();
+		auto color_Reader = color.ReadPortal();
+
+		// Create writers	
+		auto tmp1_Writer = tmp_p1.WritePortal();
+		auto tmp2_Writer = tmp_p2.WritePortal();
+		auto tmp3_Writer = tmp_p3.WritePortal();
+		auto tmpC_Writer = tmp_color.WritePortal();
+
+		// Generate subdivisions
+		for (unsigned int k = 0; k < curNumTri; k++)
+		{
+			// Get original positions
+			viskores::Vec3f v1 = p1_Reader.Get(k);
+			viskores::Vec3f v2 = p2_Reader.Get(k);
+			viskores::Vec3f v3 = p3_Reader.Get(k);
+			viskores::Vec3ui_8 col = color_Reader.Get(k);
+
+			// Calculate midpoints
+			viskores::Vec3f m12 = (v1 + v2) * 0.5f;
+			viskores::Vec3f m13 = (v1 + v3) * 0.5f;
+			viskores::Vec3f m23 = (v2 + v3) * 0.5f;
+
+			// Get the index into the new array
+			unsigned int l = k * 4;
+
+			// First triangle
+			tmp1_Writer.Set(l, v1);
+			tmp2_Writer.Set(l, m12);
+			tmp3_Writer.Set(l, m13);
+			tmpC_Writer.Set(l, col);
+
+			// Second triangle
+			tmp1_Writer.Set(l+1, m12);
+			tmp2_Writer.Set(l+1, v2);
+			tmp3_Writer.Set(l+1, m23);
+			tmpC_Writer.Set(l+1, col);
+
+			// Third triangle
+			tmp1_Writer.Set(l+2, m13);
+			tmp2_Writer.Set(l+2, m23);
+			tmp3_Writer.Set(l+2, v3);
+			tmpC_Writer.Set(l+2, col);
+
+			// Fourth triangle
+			tmp1_Writer.Set(l+3, m13);
+			tmp2_Writer.Set(l+3, m12);
+			tmp3_Writer.Set(l+3, m23);
+			tmpC_Writer.Set(l+3, col);
+
+		}
+
+		//Copy subdivisions to original vectors
+		p1.DeepCopyFrom(tmp_p1);
+		p2.DeepCopyFrom(tmp_p2);
+		p3.DeepCopyFrom(tmp_p3);
+		color.DeepCopyFrom(tmp_color);
+
+		curNumTri *= 4;
+	}
+
+	numTri = curNumTri;
+
 }
 
 /*
@@ -294,13 +380,14 @@ int main(int argc, char **argv)
 
 	std::cout << "Triangles: " << numTri << std::endl;
 #endif
+
 #endif
 	Image final_image;
 	initImage(&final_image, WIDTH, HEIGHT);
 #if DEBUG > 0
 	std::cout << "Finished Initialize Image" << std::endl;
 #endif
-	for(int i = 0; i < 10; i++)
+	for(int i = 0; i < 1; i++)
 		RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image);
 
 #if DEBUG > 0

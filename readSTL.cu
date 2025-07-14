@@ -272,29 +272,32 @@ unsigned int readTriFromBinarySTL(
 			viskores::Vec3f m13 = (v1 + v3) * 0.5f;
 			viskores::Vec3f m23 = (v2 + v3) * 0.5f;
 
+			// Get index into new array
+			unsigned int l = k * 4;
+
 			// First triangle
-			tmp1_Writer.Set(k, v1);
-			tmp2_Writer.Set(k, m12);
-			tmp3_Writer.Set(k, m13);
-			tmpC_Writer.Set(k, col);
+			tmp1_Writer.Set(l, v1);
+			tmp2_Writer.Set(l, m12);
+			tmp3_Writer.Set(l, m13);
+			tmpC_Writer.Set(l, col);
 
 			// Second triangle
-			tmp1_Writer.Set(k+1, m12);
-			tmp2_Writer.Set(k+1, v2);
-			tmp3_Writer.Set(k+1, m23);
-			tmpC_Writer.Set(k+1, col);
+			tmp1_Writer.Set(l+1, m12);
+			tmp2_Writer.Set(l+1, v2);
+			tmp3_Writer.Set(l+1, m23);
+			tmpC_Writer.Set(l+1, col);
 
 			// Third triangle
-			tmp1_Writer.Set(k+2, m13);
-			tmp2_Writer.Set(k+2, m23);
-			tmp3_Writer.Set(k+2, v3);
-			tmpC_Writer.Set(k+2, col);
+			tmp1_Writer.Set(l+2, m13);
+			tmp2_Writer.Set(l+2, m23);
+			tmp3_Writer.Set(l+2, v3);
+			tmpC_Writer.Set(l+2, col);
 
 			// Fourth triangle
-			tmp1_Writer.Set(k+3, m13);
-			tmp2_Writer.Set(k+3, m12);
-			tmp3_Writer.Set(k+3, m23);
-			tmpC_Writer.Set(k+3, col);
+			tmp1_Writer.Set(l+3, m13);
+			tmp2_Writer.Set(l+3, m12);
+			tmp3_Writer.Set(l+3, m23);
+			tmpC_Writer.Set(l+3, col);
 
 		}
 
