@@ -137,11 +137,11 @@ unsigned int readTriFromBinarySTL(
 	viskores::cont::ArrayHandle<viskores::Vec3f> &p2,
 	viskores::cont::ArrayHandle<viskores::Vec3f> &p3,
 	viskores::cont::ArrayHandle<viskores::Vec3ui_8> &color,
-	char *filename, int &width, int &height, int scale)
+	char *filename, int &width, int &height, int scale,
+	int subdivisions)
 {
 	//get the number of triangles to read
 	unsigned int numTri = getNumTriSTL(filename);
-	unsigned int subdivisions = 1;
 	unsigned int subdividedNumTri = numTri * pow(4, subdivisions); 
 	//resize arrays
 	p1.Allocate(subdividedNumTri);
@@ -232,7 +232,7 @@ unsigned int readTriFromBinarySTL(
 
 	// Subdivide
 	unsigned int curNumTri = i;
-	for (int j = 0; j < 1; j++)
+	for (int j = 0; j < subdivisions; j++)
 	{
 		// Create temporary arrays to subdivide into
 		viskores::cont::ArrayHandle<viskores::Vec3f> tmp_p1;

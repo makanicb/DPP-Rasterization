@@ -75,7 +75,8 @@ void readTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		viskores::cont::ArrayHandle<viskores::Vec3f> &p2,
 		viskores::cont::ArrayHandle<viskores::Vec3f> &p3,
 		viskores::cont::ArrayHandle<viskores::Vec3ui_8> &color,
-		int &numTri, char *filename, int &width, int &height)
+		int &numTri, char *filename, int &width, int &height,
+		int subdivisions)
 {
 	std::cout << "Start Read Triangles" << std::endl;
 	std::ifstream fin(filename);
@@ -84,7 +85,6 @@ void readTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	getline(fin, l1);
 	ss << l1;
 	ss >> numTri;
-	int subdivisions = 1;
 	int subdividedNumTri = numTri * pow(4, subdivisions);
 	//resize the output vectors
 	p1.Allocate(subdividedNumTri);
@@ -296,14 +296,19 @@ int main(int argc, char **argv)
 	viskores::cont::Initialize(argc, argv, viskores::cont::InitializeOptions::AddHelp);
 
 	int scale = 1;
+	int subdivisions = 0;
 	if(argc < 3)
 	{
 		std::cerr << "USAGE: rast <input> <output> " << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	else if (argc > 3) // Get scale if given
+	if (argc > 3) // Get scale if given
 	{
 		scale = atoi(argv[3]);
+	}
+	if (argc > 4)
+	{
+		subdivisions = atoi(argv[4]);
 	}
 
 	//create width and height variables
@@ -352,10 +357,11 @@ int main(int argc, char **argv)
 
 	if(strcmp(fileType, "tri") == 0)
 	{
-		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
+		//SCALE NOT IMPLEMENTED
+		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT, subdivisions);
 	}
 	else if(strcmp(fileType, "stl") == 0)
-		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT, scale);
+		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT, scale, subdivisions);
 	else
 		return -1;
 
@@ -380,6 +386,7 @@ int main(int argc, char **argv)
 
 	std::cout << "Triangles: " << numTri << std::endl;
 #endif
+	std::cout << "Triangles: " << numTri << std::endl;
 
 #endif
 	Image final_image;
