@@ -9,5 +9,5 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		viskores::cont::ArrayHandle<viskores::Vec3f> &p2,
 		viskores::cont::ArrayHandle<viskores::Vec3f> &p3,
 		viskores::cont::ArrayHandle<viskores::Vec3ui_8> &color,
-		int numTri, int width, int height, Image &final_image);
+		int numTri, int width, int height, Image &final_image, bool warmup);
 #endif

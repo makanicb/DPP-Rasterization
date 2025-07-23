@@ -538,7 +538,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		viskores::cont::ArrayHandle<viskores::Vec3f> &p2,
 		viskores::cont::ArrayHandle<viskores::Vec3f> &p3,
 		viskores::cont::ArrayHandle<viskores::Vec3ui_8> &color,
-		int numTri, int width, int height, Image &final_image)
+		int numTri, int width, int height, Image &final_image, bool warmup)
 {
 	//Set up timing systems
 	std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> timer;
@@ -1006,12 +1006,15 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//{
 	//	std::cout<<(int)col[i]<<","<<(int)col[i+1]<<","<<(int)col[i+2]<<std::endl;
 	//}
-	auto p = timer.begin();
-	for(auto i = timer.begin() + 1; i != timer.end(); i++)
+	if(!warmup)
 	{
-		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(*i - *p);
-		p = i;
-		std::cout << "\t" << duration.count();	
+		auto p = timer.begin();
+		for(auto i = timer.begin() + 1; i != timer.end(); i++)
+		{
+			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(*i - *p);
+			p = i;
+			std::cout << "\t" << duration.count();	
+		}
+		std::cout << std::endl;
 	}
-	std::cout << std::endl;
 }

@@ -394,8 +394,10 @@ int main(int argc, char **argv)
 #if DEBUG > 0
 	std::cout << "Finished Initialize Image" << std::endl;
 #endif
+	// Warm up device
+	RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image, true);
 	for(int i = 0; i < 1; i++)
-		RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image);
+		RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image, false);
 
 #if DEBUG > 0
 	std::cout << "Finished Rasterize Triangles" << std::endl;
