@@ -130,7 +130,7 @@ unsigned int readTriFromBinarySTL(
 	thrust::device_vector<thrust::tuple<float,float,float>> &p2,
 	thrust::device_vector<thrust::tuple<float,float,float>> &p3,
 	thrust::device_vector<thrust::tuple<char,char,char>> &color,
-	char *filename, int &width, int &height)
+	char *filename, int &width, int &height, int scale)
 {
 	//get the number of triangles to read
 	unsigned int numTri = getNumTriSTL(filename);
@@ -166,6 +166,13 @@ unsigned int readTriFromBinarySTL(
 		fread(v2, 4, 3, f);
 		fread(v3, 4, 3, f);
 		fread(&attr, 2, 1, f);
+		//scale up positions 
+		for (int j = 0; j < 3; j++)
+		{
+			v1[j] *= scale;
+			v2[j] *= scale;
+			v3[j] *= scale;
+		}
 		//process buffers
 		width = std::max(width, std::max((int) v1[0], std::max((int) v2[0], (int) v3[0])) + 1);
 		height = std::max(height, std::max((int) v1[1], std::max((int) v2[1], (int) v3[1])) + 1);
@@ -189,6 +196,13 @@ unsigned int readTriFromBinarySTL(
 		fread(v2, 4, 3, f);
 		fread(v3, 4, 3, f);
 		fread(&attr, 2, 1, f);
+		//scale up positions
+		for(int j = 0; j < 3; j++)
+		{
+			v1[j] *= scale;
+			v2[j] *= scale;
+			v3[j] *= scale;
+		}
 		//process buffers
 		//std::cout << v1[0] - lowx << ", " << v1[1] - lowy << ", " << v1[2] << std::endl;
 		hp1[i] = thrust::make_tuple(v1[0] - lowx, v1[1] - lowy, v1[2]);

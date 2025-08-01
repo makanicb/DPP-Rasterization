@@ -65,7 +65,7 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		thrust::device_vector<thrust::tuple<float,float,float>> &p2,
 		thrust::device_vector<thrust::tuple<float,float,float>> &p3,
 		thrust::device_vector<thrust::tuple<char,char,char>> &color,
-		int &numTri, char *filename, int &width, int &height)
+		int &numTri, char *filename, int &width, int &height, int scale)
 {
 	std::cout << "Start Read Triangles" << std::endl;
 	std::ifstream fin(filename);
@@ -123,6 +123,9 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		parseTriPair(l2, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//p1[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
+		v1 *= scale;
+		v2 *= scale;
+		v3 *= scale;
 		p11[i] = v1; //get the x position 
 		p12[i] = v2; //get the y position
 		p13[i] = v3; //get the z position
@@ -134,6 +137,9 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		parseTriPair(l3, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//p2[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
+		v1 *= scale;
+		v2 *= scale;
+		v3 *= scale;
 		p21[i] = v1;
 		p22[i] = v2;
 		p23[i] = v3;
@@ -145,6 +151,9 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		parseTriPair(l4, v1, v2, v3);
 		//std::cout <<"parsed "<< v1 << ", " << v2 << ", " << v3 << std::endl;
 		//p3[i] = thrust::make_tuple<float,float,float>(v1,v2,v3);
+		v1 *= scale;
+		v2 *= scale;
+		v3 *= scale;
 		p31[i] = v1;
 		p32[i] = v2;
 		p33[i] = v3;
@@ -177,8 +186,14 @@ int main(int argc, char **argv)
 {
 	if(argc < 3)
 	{
-		std::cerr << "USAGE: rast <input> <output> " << std::endl;
+		std::cerr << "USAGE: rast <input> <output> <scale[optional]>" << std::endl;
 		exit(EXIT_FAILURE);
+	}
+
+	int scale = 1;
+	if(argc > 3)
+	{
+		scale = atoi(argv[3]);
 	}
 
 	//create width and height variables
@@ -219,9 +234,9 @@ int main(int argc, char **argv)
 	std::cout << fileType << std::endl;
 #endif
 	if(strcmp(fileType, "tri") == 0)
-		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT);
+		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT, scale);
 	else if(strcmp(fileType, "stl") == 0)
-		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT);
+		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT, scale);
 	else
 		return -1;
 
@@ -239,7 +254,7 @@ int main(int argc, char **argv)
 	std::cout << "Finished Initialize Image" << std::endl;
 #endif
 
-	for(int i = 0; i < 10; i++)
+	for(int i = 0; i < 1; i++)
 		RasterizeTriangles(p1, p2, p3, color, numTri, WIDTH, HEIGHT, final_image);
 
 #if DEBUG > 0
