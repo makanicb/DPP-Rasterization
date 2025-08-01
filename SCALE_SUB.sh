@@ -9,13 +9,14 @@ echo $fout
 
 ./triCount $fin
 
-echo -e "Scale\tSubdivisions\tRasterize\tSort\tSelect\tWrite"
+echo -e "Scale\tTriangle Multiplier\tRasterize\tSort\tSelect\tWrite"
 
-for i in 1 2 4 8 16
+for i in 1 2 4 8 16 32 64 128
 do
 	for j in 0 1 2 3 4
 	do
-		echo -n -e "$i\t$j"
+		let mult=4**$j
+		echo -n -e "$i\t$mult"
 		build/rast --viskores-device CUDA $fin $fout $i $j
 	done
 done
