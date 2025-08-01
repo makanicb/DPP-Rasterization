@@ -6,9 +6,6 @@ project(DPP-Rasterization LANGUAGES CXX CUDA)
 
 set(CMAKE_CUDA_ARCHITECTURES 80)
 
-list(APPEND CMAKE_PREFIX_PATH "/home/makanib/cdux/viskores-install")
-find_package(Viskores REQUIRED)
-
 find_package(Thrust REQUIRED CONFIG)
 thrust_create_target(Thrust HOST CPP DEVICE OMP)
 
