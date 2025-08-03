@@ -130,7 +130,7 @@ unsigned int readTriFromBinarySTL(
 	thrust::device_vector<thrust::tuple<float,float,float>> &p2,
 	thrust::device_vector<thrust::tuple<float,float,float>> &p3,
 	thrust::device_vector<thrust::tuple<char,char,char>> &color,
-	char *filename, int &width, int &height, int scale)
+	char *filename, int &width, int &height, int scale, int subdivisions)
 {
 	//get the number of triangles to read
 	unsigned int numTri = getNumTriSTL(filename);
@@ -214,6 +214,69 @@ unsigned int readTriFromBinarySTL(
 	}
 	//std::cout << std::endl;
 
+	// Subdivide triangles
+	unsigned int curNumTri = numTri;
+	for(int j = 0; j < subdivisions; j++)
+	{
+		// Create temporary buffers for subdivision	
+		thrust::host_vector<thrust::tuple<float,float,float>> tp1(curNumTri * 4);
+		thrust::host_vector<thrust::tuple<float,float,float>> tp2(curNumTri * 4);
+		thrust::host_vector<thrust::tuple<float,float,float>> tp3(curNumTri * 4);
+
+		// Do one subdivision
+		for(i = 0; i < curNumTri; i++)
+		{
+			// Original points
+			auto v1 = hp1[i];
+			auto v2 = hp2[i];
+			auto v3 = hp3[i];
+
+			// Midpoints
+			auto v12 = thrust::make_tuple<float,float,float>(
+					(thrust::get<0>(v1) + thrust::get<0>(v2))/2,
+					(thrust::get<1>(v1) + thrust::get<1>(v2))/2,
+					(thrust::get<2>(v1) + thrust::get<2>(v2))/2);
+			auto v13 = thrust::make_tuple<float,float,float>(
+					(thrust::get<0>(v1) + thrust::get<0>(v3))/2,
+					(thrust::get<1>(v1) + thrust::get<1>(v3))/2,
+					(thrust::get<2>(v1) + thrust::get<2>(v3))/2);
+			auto v23 = thrust::make_tuple<float,float,float>(
+					(thrust::get<0>(v2) + thrust::get<0>(v3))/2,
+					(thrust::get<1>(v2) + thrust::get<1>(v3))/2,
+					(thrust::get<2>(v2) + thrust::get<2>(v3))/2);
+
+			// New Triangles
+			unsigned int k = i * 4;	
+
+			tp1[k] = v1;
+			tp2[k] = v12;
+			tp3[k] = v13;
+
+			tp1[k+1] = v12;
+			tp2[k+1] = v2;
+			tp3[k+1] = v23;
+
+			tp1[k+2] = v13;
+			tp2[k+2] = v23;
+			tp3[k+2] = v3;
+
+			tp1[k+2] = v12;
+			tp2[k+2] = v23;
+			tp3[k+2] = v13;
+		}
+
+		// Resize vectors
+		curNumTri *= 4;
+		hp1.resize(curNumTri);
+		hp2.resize(curNumTri);
+		hp3.resize(curNumTri);
+
+		// Copy temporary vectors
+		hp1 = tp1;
+		hp2 = tp2;
+		hp3 = tp3;
+	}
+
 	//copy host vectors into device vectors
 	//thrust::copy(p1.begin(), p1.end(), hp1.begin());
 	p1 = hp1;
@@ -221,7 +284,7 @@ unsigned int readTriFromBinarySTL(
 	p3 = hp3;
 	color = hcolor;
 
-	return i;
+	return curNumTri;
 }
 
 /*int main(int argc, char **argv)

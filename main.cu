@@ -65,7 +65,8 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		thrust::device_vector<thrust::tuple<float,float,float>> &p2,
 		thrust::device_vector<thrust::tuple<float,float,float>> &p3,
 		thrust::device_vector<thrust::tuple<char,char,char>> &color,
-		int &numTri, char *filename, int &width, int &height, int scale)
+		int &numTri, char *filename, int &width, int &height, int scale,
+		int subdivisions)
 {
 	std::cout << "Start Read Triangles" << std::endl;
 	std::ifstream fin(filename);
@@ -165,20 +166,91 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	}
 	fin.close();
 
+	//temporary host buffers for points
+	thrust::host_vector<thrust::tuple<float,float,float>> hp1(numTri);
+	thrust::host_vector<thrust::tuple<float,float,float>> hp2(numTri);
+	thrust::host_vector<thrust::tuple<float,float,float>> hp3(numTri);
+
 	auto p1b = thrust::make_zip_iterator(thrust::make_tuple(p11.begin(), p12.begin(), p13.begin()));
 	auto p1e = thrust::make_zip_iterator(thrust::make_tuple(p11.end(), p12.end(), p13.end()));
-	thrust::copy(p1b, p1e, p1.begin());
+	thrust::copy(p1b, p1e, hp1.begin());
 	auto p2b = thrust::make_zip_iterator(thrust::make_tuple(p21.begin(), p22.begin(), p23.begin()));
 	auto p2e = thrust::make_zip_iterator(thrust::make_tuple(p21.end(), p22.end(), p23.end()));
-	thrust::copy(p2b, p2e, p2.begin());
+	thrust::copy(p2b, p2e, hp2.begin());
 	auto p3b = thrust::make_zip_iterator(thrust::make_tuple(p31.begin(), p32.begin(), p33.begin()));
 	auto p3e = thrust::make_zip_iterator(thrust::make_tuple(p31.end(), p32.end(), p33.end()));
-	thrust::copy(p3b, p3e, p3.begin());
+	thrust::copy(p3b, p3e, hp3.begin());
 	auto cb = thrust::make_zip_iterator(thrust::make_tuple(c1.begin(), c2.begin(), c3.begin()));
 	auto ce = thrust::make_zip_iterator(thrust::make_tuple(c1.end(), c2.end(), c3.end()));
 	thrust::copy(cb, ce, color.begin());
 	width -= lowx;
 	height -= lowy;
+
+	// Subdivide triangles
+	for(int j = 0; j < subdivisions; j++)
+	{
+		// Create temporary buffers for subdivision	
+		thrust::host_vector<thrust::tuple<float,float,float>> tp1(numTri * 4);
+		thrust::host_vector<thrust::tuple<float,float,float>> tp2(numTri * 4);
+		thrust::host_vector<thrust::tuple<float,float,float>> tp3(numTri * 4);
+
+		// Do one subdivision
+		for(int i = 0; i < numTri; i++)
+		{
+			// Original points
+			auto v1 = hp1[i];
+			auto v2 = hp2[i];
+			auto v3 = hp3[i];
+
+			// Midpoints
+			auto v12 = thrust::make_tuple<float,float,float>(
+					(thrust::get<0>(v1) + thrust::get<0>(v2))/2,
+					(thrust::get<1>(v1) + thrust::get<1>(v2))/2,
+					(thrust::get<2>(v1) + thrust::get<2>(v2))/2);
+			auto v13 = thrust::make_tuple<float,float,float>(
+					(thrust::get<0>(v1) + thrust::get<0>(v3))/2,
+					(thrust::get<1>(v1) + thrust::get<1>(v3))/2,
+					(thrust::get<2>(v1) + thrust::get<2>(v3))/2);
+			auto v23 = thrust::make_tuple<float,float,float>(
+					(thrust::get<0>(v2) + thrust::get<0>(v3))/2,
+					(thrust::get<1>(v2) + thrust::get<1>(v3))/2,
+					(thrust::get<2>(v2) + thrust::get<2>(v3))/2);
+
+			// New Triangles
+			unsigned int k = i * 4;	
+
+			tp1[k] = v1;
+			tp2[k] = v12;
+			tp3[k] = v13;
+
+			tp1[k+1] = v12;
+			tp2[k+1] = v2;
+			tp3[k+1] = v23;
+
+			tp1[k+2] = v13;
+			tp2[k+2] = v23;
+			tp3[k+2] = v3;
+
+			tp1[k+2] = v12;
+			tp2[k+2] = v23;
+			tp3[k+2] = v13;
+		}
+
+		// Resize vectors
+		numTri *= 4;
+		hp1.resize(numTri);
+		hp2.resize(numTri);
+		hp3.resize(numTri);
+
+		// Copy temporary vectors
+		hp1 = tp1;
+		hp2 = tp2;
+		hp3 = tp3;
+	}
+
+	p1 = hp1;
+	p2 = hp2;
+	p3 = hp3;
 }
 	
 
@@ -186,7 +258,7 @@ int main(int argc, char **argv)
 {
 	if(argc < 3)
 	{
-		std::cerr << "USAGE: rast <input> <output> <scale[optional]>" << std::endl;
+		std::cerr << "USAGE: rast <input> <output> [optional] <scale> <subdivisions>" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 
@@ -194,6 +266,11 @@ int main(int argc, char **argv)
 	if(argc > 3)
 	{
 		scale = atoi(argv[3]);
+	}
+	int subdivisions = 0;
+	if(argc > 4)
+	{
+		subdivisions = atoi(argv[4]);
 	}
 
 	//create width and height variables
@@ -234,9 +311,9 @@ int main(int argc, char **argv)
 	std::cout << fileType << std::endl;
 #endif
 	if(strcmp(fileType, "tri") == 0)
-		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT, scale);
+		readTriangles(p1, p2, p3, color, numTri, argv[1], WIDTH, HEIGHT, scale, subdivisions);
 	else if(strcmp(fileType, "stl") == 0)
-		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT, scale);
+		numTri = readTriFromBinarySTL(p1, p2, p3, color, argv[1], WIDTH, HEIGHT, scale, subdivisions);
 	else
 		return -1;
 
