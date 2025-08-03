@@ -222,6 +222,7 @@ unsigned int readTriFromBinarySTL(
 		thrust::host_vector<thrust::tuple<float,float,float>> tp1(curNumTri * 4);
 		thrust::host_vector<thrust::tuple<float,float,float>> tp2(curNumTri * 4);
 		thrust::host_vector<thrust::tuple<float,float,float>> tp3(curNumTri * 4);
+		thrust::host_vector<thrust::tuple<char,char,char>> tcolor(curNumTri * 4);
 
 		// Do one subdivision
 		for(i = 0; i < curNumTri; i++)
@@ -251,18 +252,22 @@ unsigned int readTriFromBinarySTL(
 			tp1[k] = v1;
 			tp2[k] = v12;
 			tp3[k] = v13;
+			tcolor[k] = hcolor[i];
 
 			tp1[k+1] = v12;
 			tp2[k+1] = v2;
 			tp3[k+1] = v23;
+			tcolor[k+1] = hcolor[i];
 
 			tp1[k+2] = v13;
 			tp2[k+2] = v23;
 			tp3[k+2] = v3;
+			tcolor[k+2] = hcolor[i];
 
-			tp1[k+2] = v12;
-			tp2[k+2] = v23;
-			tp3[k+2] = v13;
+			tp1[k+3] = v12;
+			tp2[k+3] = v23;
+			tp3[k+3] = v13;
+			tcolor[k+3] = hcolor[i];
 		}
 
 		// Resize vectors
@@ -270,11 +275,13 @@ unsigned int readTriFromBinarySTL(
 		hp1.resize(curNumTri);
 		hp2.resize(curNumTri);
 		hp3.resize(curNumTri);
+		hcolor.resize(curNumTri);
 
 		// Copy temporary vectors
 		hp1 = tp1;
 		hp2 = tp2;
 		hp3 = tp3;
+		hcolor = tcolor;
 	}
 
 	//copy host vectors into device vectors
