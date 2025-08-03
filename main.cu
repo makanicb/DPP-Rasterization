@@ -170,6 +170,7 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	thrust::host_vector<thrust::tuple<float,float,float>> hp1(numTri);
 	thrust::host_vector<thrust::tuple<float,float,float>> hp2(numTri);
 	thrust::host_vector<thrust::tuple<float,float,float>> hp3(numTri);
+	thrust::host_vector<thrust::tuple<char,char,char>> hcolor(numTri);
 
 	auto p1b = thrust::make_zip_iterator(thrust::make_tuple(p11.begin(), p12.begin(), p13.begin()));
 	auto p1e = thrust::make_zip_iterator(thrust::make_tuple(p11.end(), p12.end(), p13.end()));
@@ -182,7 +183,7 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 	thrust::copy(p3b, p3e, hp3.begin());
 	auto cb = thrust::make_zip_iterator(thrust::make_tuple(c1.begin(), c2.begin(), c3.begin()));
 	auto ce = thrust::make_zip_iterator(thrust::make_tuple(c1.end(), c2.end(), c3.end()));
-	thrust::copy(cb, ce, color.begin());
+	thrust::copy(cb, ce, hcolor.begin());
 	width -= lowx;
 	height -= lowy;
 
@@ -193,6 +194,7 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		thrust::host_vector<thrust::tuple<float,float,float>> tp1(numTri * 4);
 		thrust::host_vector<thrust::tuple<float,float,float>> tp2(numTri * 4);
 		thrust::host_vector<thrust::tuple<float,float,float>> tp3(numTri * 4);
+		thrust::host_vector<thrust::tuple<char,char,char>> tcolor(numTri * 4);
 
 		// Do one subdivision
 		for(int i = 0; i < numTri; i++)
@@ -222,18 +224,22 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 			tp1[k] = v1;
 			tp2[k] = v12;
 			tp3[k] = v13;
+			tcolor[k] = hcolor[i];
 
 			tp1[k+1] = v12;
 			tp2[k+1] = v2;
 			tp3[k+1] = v23;
+			tcolor[k+1] = hcolor[i];
 
 			tp1[k+2] = v13;
 			tp2[k+2] = v23;
 			tp3[k+2] = v3;
+			tcolor[k+2] = hcolor[i];
 
-			tp1[k+2] = v12;
-			tp2[k+2] = v23;
-			tp3[k+2] = v13;
+			tp1[k+3] = v12;
+			tp2[k+3] = v23;
+			tp3[k+3] = v13;
+			tcolor[k+3] = hcolor[i];
 		}
 
 		// Resize vectors
@@ -241,16 +247,19 @@ void readTriangles(thrust::device_vector<thrust::tuple<float,float,float>> &p1,
 		hp1.resize(numTri);
 		hp2.resize(numTri);
 		hp3.resize(numTri);
+		hcolor.resize(numTri);
 
 		// Copy temporary vectors
 		hp1 = tp1;
 		hp2 = tp2;
 		hp3 = tp3;
+		hcolor = tcolor;
 	}
 
 	p1 = hp1;
 	p2 = hp2;
 	p3 = hp3;
+	color = hcolor;
 }
 	
 
