@@ -9,10 +9,12 @@ option(DEBUG_MODE "Enable debug mode" ON)
 set(OPTIMIZATION_LEVEL "O0" CACHE STRING "Optimization level (O0, O1, O2, O3)")
 option(ENABLE_WARNINGS "Enable compiler warnings" ON)
 set(DEBUG_LEVEL "1" CACHE STRING "Debug Level (0-4)")
+set(TIME_LEVEL "1" CACHE STRING "Time Level (0-2)")
 
 # Set optimization level options
 set_property(CACHE OPTIMIZATION_LEVEL PROPERTY STRINGS "O0" "O1" "O2" "O3")
 set_property(CACHE DEBUG_LEVEL PROPERTY STRINGS "0" "1" "2" "3" "4")
+set_property(CACHE TIME_LEVEL PROPERTY STRINGS "0" "1" "2")
 
 set(CMAKE_CUDA_ARCHITECTURES 80)
 
@@ -63,5 +65,7 @@ target_compile_options(rast PRIVATE
 
 # Define DEBUG level
 if(DEBUG_MODE)
-	target_compile_definitions(rast PRIVATE DEBUG=${DEBUG_LEVEL})
+	target_compile_definitions(rast PRIVATE DEBUG=${DEBUG_LEVEL} TIME=${TIME_LEVEL})
+else()
+	target_compile_definitions(rast PRIVATE TIME=${TIME_LEVEL})
 endif()
