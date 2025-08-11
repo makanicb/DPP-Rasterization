@@ -11,7 +11,7 @@ echo $fout
 
 echo -e "Scale\tTriangle Multiplier\tRasterize\tSort\tSelect\tWrite"
 
-for i in 1 2 4 8 16 32 64 128
+for i in 1 2 4 8 16
 do
 	for j in 0 1 2 3 4
 	do
