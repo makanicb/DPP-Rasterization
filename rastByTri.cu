@@ -31,6 +31,10 @@
 #define DEBUG 0 
 #endif
 
+#ifndef TIME
+#define TIME 0
+#endif
+
 __host__ __device__
 void getEnds(float x1, float y1, float x2, float y2, float x3, float y3, float y, float &end1, float &end2)
 {
@@ -323,29 +327,42 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		thrust::device_vector<thrust::tuple<char, char, char>> &color,
 		int numTri, int width, int height, Image &final_image, bool warmup)
 {
+#if TIME > 0 
 	//Set up timing systems
 	thrust::host_vector<std::chrono::time_point<std::chrono::high_resolution_clock>> timer;
 	//time: function start
 	timer.push_back(std::chrono::high_resolution_clock::now());	
+	//start: rasterize
+#endif
 #if DEBUG > 0
 	std::cout << "Count fragments" << std::endl;
 #endif
 #if DEBUG > 1 
 	std::cout << numTri << " Triangles" << std::endl;
 #endif	
+	//start: rasterize - count triangles
 	thrust::device_vector<int> frags(numTri);
 
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), frags.begin())),
 			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), frags.end())),
 			 fragCount());
+#if TIME > 1 
+	//time: rasterize - counted triangles
+	timer.push_back(std::chrono::high_resolution_clock::now());	
+#endif
 #if DEBUG > 1 
 	std::cout << "# frags by triange: " << std::endl;
 	print_int_vec(frags.begin(), frags.end());
 #endif
+	//start: rasterize - retrieve triangle write positions
 
 	thrust::device_vector<int> write_index(numTri);
 
 	thrust::exclusive_scan(frags.begin(), frags.end(), write_index.begin());
+#if TIME > 1
+	//time: rasterize - retrieved write positions
+	timer.push_back(std::chrono::high_resolution_clock::now());	
+#endif
 #if DEBUG > 1
 	std::cout << "write position by triange: " << std::endl;
 	print_int_vec(write_index.begin(), write_index.end());
@@ -358,9 +375,14 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #if DEBUG > 0
 	std::cout << "Get fragments" << std::endl;
 #endif
+	//start: rasterize - associate fragments to triangles
 
 	thrust::device_vector<int> frag_tri(fragments);
 	expand_int(write_index.begin(), frags.begin(), frag_tri.begin(), frag_tri.end(), numTri);
+#if TIME > 1
+	//time: rasterize - associated fragments to triangles
+	timer.push_back(std::chrono::high_resolution_clock::now());	
+#endif
 #if DEBUG > 3
 	std::cout << "Which triangle does each fragment belong to?" << std::endl;
 	print_int_vec(frag_tri.begin(), frag_tri.end());
@@ -387,45 +409,67 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		 thrust::make_permutation_iterator(write_index.begin(), frag_pos.begin()), frag_ind.begin(),
 		 thrust::minus<int>());
 */	
+
+	//start: rasterize - count rows
+
 	thrust::device_vector<int> rows(numTri);
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), rows.begin())),
 			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), rows.end())),
 			 rowCount());
+#if TIME > 1
+	//time: rasterize - counted rows
+	timer.push_back(std::chrono::high_resolution_clock::now());	
+#endif
 #if DEBUG > 1
 	std::cout << "How many rows does each triangle have?" << std::endl;
 	for(int i = 0; i < numTri; i++)
 		std::cout << rows[i] << " ";
 	std::cout << std::endl;
 #endif
-
+	//start: rasterize - get row offset of triangles
 	thrust::device_vector<int> row_off(numTri);
 	thrust::exclusive_scan(rows.begin(), rows.end(), row_off.begin());
+#if TIME > 1
+	//time: rasterize - retrieved row offset of triangles
+	timer.push_back(std::chrono::high_resolution_clock::now());	
+#endif
 #if DEBUG > 1
 	std::cout << "What is the row offset of each triangle?" << std::endl;
 	for(int i = 0; i < numTri; i++)
 		std::cout << row_off[i] << " ";
 	std::cout << std::endl;
 #endif
+	//start: rasterize - associate rows to triangles
 
 	int num_rows = row_off[numTri-1] + rows[numTri-1];
 
 	thrust::device_vector<int> tri_ptr(num_rows);
 	
 	expand_int(row_off.begin(), rows.begin(), tri_ptr.begin(), tri_ptr.end(), numTri);
+#if TIME > 1
+	//time: rasterize - associated rows to triangles
+	timer.push_back(std::chrono::high_resolution_clock::now());	
+#endif
 #if DEBUG > 2 
 	std::cout << "What triangle does each row belong to?" << std::endl;
 	for(int i = 0; i < num_rows; i++)
 		std::cout << tri_ptr[i] << " ";
 	std::cout << std::endl;	
 #endif
+	//start: rasterize - index each row within its respective triangle
 
 	thrust::device_vector<int> row_ptr(num_rows);
 
 	index_int(tri_ptr.begin(), row_off.begin(), row_ptr.begin(), num_rows);
+#if TIME > 1
+	//time: rasterize - indexed rows
+	timer.push_back(std::chrono::high_resolution_clock::now());	
+#endif
 #if DEBUG > 2 
 	std::cout << "The index of each row." << std::endl;
 	print_int_vec(row_ptr.begin(), row_ptr.end());
 #endif
+	//start: rasterize - count columns
 
 	thrust::device_vector<int> col_count(num_rows);
 
@@ -443,20 +487,30 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 			 row_ptr.end(),
 			 col_count.end())),
 		colCount());
+#if TIME > 1
+	//time: rasterize - counted columns
+	timer.push_back(std::chrono::high_resolution_clock::now());	
+#endif
 #if DEBUG > 2
 	std::cout << "How many columns does each row have?" << std::endl;
 	print_int_vec(col_count.begin(), col_count.end());
 #endif
+	//start: rasterize - get column offset of rows
 
 	thrust::device_vector<int> col_off(num_rows);
 
 	thrust::exclusive_scan(col_count.begin(), col_count.end(), col_off.begin());
+#if TIME > 1
+	//time: rasterize - retrieved column offsets
+	timer.push_back(std::chrono::high_resolution_clock::now());	
+#endif
 #if DEBUG > 2 
 	std::cout << "Column offsets by row" << std::endl;
 	print_int_vec(col_off.begin(), col_off.end());
 	std::cout << "Number of columns " <<  col_off[num_rows-1] + col_count[num_rows-1] << std::endl;
 #endif
 	assert((fragments == (int)col_off[num_rows-1] + (int)col_count[num_rows-1]));
+	//start: rasterize - get fragment (row, column) position
 	thrust::device_vector<int> frag_row(fragments);
 
 	expand_int(col_off.begin(), col_count.begin(), frag_row.begin(), frag_row.end(), num_rows);
@@ -472,11 +526,16 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		 thrust::make_permutation_iterator(row_off.begin(), frag_tri.begin()),
 		 frag_row.begin(),
 		 thrust::minus<int>());
+#if TIME > 1
+	//time: rasterize - get fragment (row, column) position
+	timer.push_back(std::chrono::high_resolution_clock::now());	
+#endif
 #if DEBUG > 3 
 	std::cout << "Frag positions by row and column in every triangle." << std::endl;
 	print_int_vec(frag_row.begin(), frag_row.end());
 	print_int_vec(frag_col.begin(), frag_col.end());
 #endif
+	//time: rasterize - rasterize triangles (get position of each fragment)
 
 	thrust::device_vector<thrust::pair<int,int>> pos(fragments);
 	thrust::device_vector<float> depth(fragments);
@@ -503,13 +562,17 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 
 	thrust::device_vector<thrust::tuple<char,char,char>> frag_colors(fragments);
 	thrust::gather(frag_tri.begin(), frag_tri.end(), color.begin(), frag_colors.begin());
+#if TIME > 0
 	//time: rasterized triangles. acquired all fragments
 	timer.push_back(std::chrono::high_resolution_clock::now());
+	//start: sort
+#endif
 #if DEBUG > 0	
 	std::cout << "find fragments to write" << std::endl;
 
 	std::cout << "\tcopy position" << std::endl;
 #endif
+	//start: sort - duplicate fragment positions, depths, and colors
 	thrust::device_vector<thrust::pair<int,int>> cpos(fragments);
 	thrust::device_vector<float> cdepth(fragments);
 	thrust::device_vector<thrust::tuple<char,char,char>> cfrag_colors(fragments);
@@ -517,9 +580,14 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::sequence(sorted_inds.begin(), sorted_inds.end());
 
 	thrust::copy(pos.begin(), pos.end(), cpos.begin());
+#if TIME > 1
+	//time: sort - duplicated fragments
+	timer.push_back(std::chrono::high_resolution_clock::now());
+#endif
 #if DEBUG > 0
 	std::cout << "\tsort fragments" << std::endl;
 #endif
+	//start: sort - sort fragments by position
 	thrust::sort_by_key(cpos.begin(), cpos.end(), sorted_inds.begin());
 	thrust::gather(sorted_inds.begin(), sorted_inds.end(), frag_colors.begin(), cfrag_colors.begin());
 	thrust::gather(sorted_inds.begin(), sorted_inds.end(), depth.begin(), cdepth.begin());
@@ -529,20 +597,29 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	print_int_vec(sorted_inds.begin(), sorted_inds.end());
 	print_float_vec(cdepth.begin(), cdepth.end());
 #endif
+#if TIME > 0
 	//time: sorted fragments
 	timer.push_back(std::chrono::high_resolution_clock::now());
+#endif
+	//start: select
 #if DEBUG > 0
 	std::cout << "\tget fragments at lowest depth" << std::endl;
 #endif
+	//start: select - get unique positions
 	int unique_positions;
 	{
 		thrust::device_vector<thrust::pair<int,int>> tmp_pos(fragments);
 		auto tmp_pos_end = thrust::unique_copy(cpos.begin(), cpos.end(), tmp_pos.begin());
 		unique_positions = (int)(tmp_pos_end - tmp_pos.begin());
 	}
+#if TIME > 1
+	//time: select - retrieved unique positions 
+	timer.push_back(std::chrono::high_resolution_clock::now());
+#endif
 #if DEBUG > 1
 	std::cout << "\tunique positions = " << unique_positions << std::endl;
 #endif
+	//start: select - count overlapping fragments at each position
 	thrust::device_vector<thrust::pair<int,int>> true_fragments(unique_positions);
 	thrust::device_vector<float> min_depth(unique_positions);
 	thrust::device_vector<int> pos_count(unique_positions);
@@ -550,6 +627,10 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 			min_depth.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::maximum<float>());
 	thrust::reduce_by_key(cpos.begin(), cpos.end(), thrust::make_constant_iterator<int>(1), thrust::make_discard_iterator(), 
 			pos_count.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::plus<int>());
+#if TIME > 1
+	//time: select - counted overlap
+	timer.push_back(std::chrono::high_resolution_clock::now());
+#endif
 #if DEBUG > 3
 	std::cout << "Number of duplicates at each unique position" << std::endl;
 	print_int_vec(pos_count.begin(), pos_count.end());
@@ -557,20 +638,35 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #if DEBUG > 0
 	std::cout << "\tGet the minimum depth of each unique position" << std::endl;
 #endif
+	//start: select - get offset of each unique position
 	thrust::device_vector<int> pos_start_ind(unique_positions);
 	thrust::exclusive_scan(pos_count.begin(), pos_count.end(), pos_start_ind.begin());
+#if TIME > 1
+	//time: select - retrieved offsets
+	timer.push_back(std::chrono::high_resolution_clock::now());
+#endif
 #if DEBUG > 3
 	std::cout << "Offset by unique position" << std::endl;
 	print_int_vec(pos_start_ind.begin(), pos_start_ind.end());
 #endif
+	//start: select - get index of minimum depth fragment at each position
 	thrust::device_vector<int> depth_map(fragments);
 	expand_int(pos_start_ind.begin(), pos_count.begin(), depth_map.begin(), depth_map.end(), unique_positions);
+#if TIME > 1
+	//time: select - retrieved index of minimum depth fragments
+	timer.push_back(std::chrono::high_resolution_clock::now());
+#endif
 #if DEBUG > 3
 	std::cout << "Min depth gather position by fragment" << std::endl;
 	print_int_vec(depth_map.begin(), depth_map.end());
 #endif
+	//start: get minimum depth at each position
 	thrust::device_vector<float> exp_min_depth(fragments);
 	thrust::gather(depth_map.begin(), depth_map.end(), min_depth.begin(), exp_min_depth.begin());
+#if TIME > 1
+	//time: select - retrieved minimum depths
+	timer.push_back(std::chrono::high_resolution_clock::now());
+#endif
 #if DEBUG > 3
 	std::cout << "Min depth by fragment" << std::endl;
 	print_float_vec(exp_min_depth.begin(), exp_min_depth.end());
@@ -602,6 +698,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #if DEBUG > 0
 	std::cout << "\tchoose fragments to write" << std::endl;
 #endif
+	//start: select - choose fragments to write
 	thrust::device_vector<bool> write_frag(fragments);
 	thrust::transform(exp_min_depth.begin(), exp_min_depth.end(), cdepth.begin(), write_frag.begin(), thrust::equal_to<float>());
 #if DEBUG > 3
@@ -610,25 +707,40 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		std::cout << write_frag[i] << " ";
 	std::cout << std::endl;
 #endif
+#if TIME > 0
 	//time: got visible fragments
 	timer.push_back(std::chrono::high_resolution_clock::now());
+#endif
+	//start: write
 #if DEBUG > 0
 	std::cout << "write fragments" << std::endl;
 #endif
+	//start: write - get buffer position of each fragment
 
 	thrust::device_vector<int> rowMajorPos(fragments);
 	thrust::transform(cpos.begin(), cpos.end(), rowMajorPos.begin(), toRowMajor(width));
+#if TIME > 1 
+	//time: write - retrieved buffer positions
+	timer.push_back(std::chrono::high_resolution_clock::now());
+#endif
 #if DEBUG > 3
 	std::cout << "Row major position by fragment" << std::endl;
 	print_int_vec(rowMajorPos.begin(), rowMajorPos.end());
 #endif
+
+	//start: write - scatter fragment colors to image buffer (device vector)
 
 	thrust::device_vector<thrust::tuple<unsigned char,unsigned char,unsigned char>> img(width * height);
 	thrust::fill(img.begin(), img.end(), thrust::make_tuple<unsigned char,unsigned char,unsigned char>(255,255,255));
 	thrust::scatter_if(cfrag_colors.begin(), cfrag_colors.end(), rowMajorPos.begin(), write_frag.begin(), img.begin());
 
 	thrust::host_vector<thrust::tuple<char,char,char>> h_img = img;
+#if TIME > 1 
+	//time: write - scattered fragments
+	timer.push_back(std::chrono::high_resolution_clock::now());
+#endif
 	
+	//start: write - write colors to final image (Image struct)
 	int count = 0;
 	for(auto i = h_img.begin(); i < h_img.end(); i++)
 	{
@@ -637,13 +749,19 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		final_image.data[count++] = thrust::get<1>(t);
 		final_image.data[count++] = thrust::get<2>(t);
 	}
+
+#if TIME > 0
 	//time: write final image to output
 	timer.push_back(std::chrono::high_resolution_clock::now());
+#endif
+	//end
+
 	//char *col = final_image.data;
 	//for(int i = 0; i < 60; i+=3)
 	//{
 	//	std::cout<<(int)col[i]<<","<<(int)col[i+1]<<","<<(int)col[i+2]<<std::endl;
 	//}
+#if TIME > 0
 	if(!warmup)	
 	{
 		auto p = timer.begin();
@@ -655,4 +773,5 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		}
 		std::cout << std::endl;
 	}
+#endif
 }
