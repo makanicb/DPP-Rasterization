@@ -16,7 +16,7 @@ do
 	for j in 0 1 2 3 4
 	do
 		let mult=4**$j
-		echo -n -e "$i\t$mult"
+		echo -n -e "$i, $mult"
 		./rast $fin $fout $i $j
 	done
 done
