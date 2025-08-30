@@ -2,7 +2,6 @@
 #include <cmath>
 #include <cassert>
 #include <limits>
-#include <chrono>
 
 /*
 #include <thrust/device_vector.h>
@@ -35,6 +34,7 @@
 #include <viskores/cont/ArrayHandleDiscard.h>
 #include <viskores/cont/ArrayHandlePermutation.h>
 #include <viskores/cont/Invoker.h>
+#include <viskores/cont/Timer.h>
 #include <viskores/Types.h>
 #include <viskores/worklet/ScatterCounting.h>
 #include <viskores/worklet/ScatterPermutation.h>
@@ -544,11 +544,14 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		viskores::cont::ArrayHandle<viskores::Vec3ui_8> &color,
 		int numTri, int width, int height, Image &final_image, bool warmup)
 {
-	//Set up timing systems
-	std::vector<std::chrono::time_point<std::chrono::high_resolution_clock>> timer;
 #if TIME > 0
+	//Set up timing systems
+	std::vector<viskores::Float64> times;
+	viskores::cont::Timer timer;
+
 	//time: function start
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Start();
+	
 #endif
 	
 	//Define a Viskores Invoker
@@ -571,7 +574,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	invoke(fragCount, p1, p2, p3, frags);
 #if TIME > 1
 	//time: rasterize - count fragments
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 
 
@@ -585,7 +590,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 			write_index);
 #if TIME > 1
 	//time: rasterize - retrieved write positions
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 #if DEBUG > 1
 	std::cout << "write position by triangle: " << std::endl;
@@ -605,7 +612,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	vexpand(frags, frag_tri);
 #if TIME > 1
 	//time: rasterize - associate fragmetns to triangles
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 #if DEBUG > 3
 	std::cout << "Which triangle does each fragment belong to?" << std::endl;
@@ -642,7 +651,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	invoke(rowCount, p1, p2, p3, rows);
 #if TIME > 1
 	//time: rasterize - count rows
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 #if DEBUG > 1
 	std::cout << "How many rows does each triangle have?" << std::endl;
@@ -653,7 +664,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	viskores::cont::Algorithm::ScanExclusive(viskores::cont::make_ArrayHandleCast<viskores::Id>(rows), row_off);
 #if TIME > 1
 	//time: rasterize - get row offsets in triangles
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 #if DEBUG > 1
 	std::cout << "What is the row offset of each triangle?" << std::endl;
@@ -670,7 +683,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	vexpand(rows, tri_ptr);
 #if TIME > 1
 	//time: rasterize - associated rows to triangles
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 #if DEBUG > 2 
 	std::cout << "What triangle does each row belong to?" << std::endl;
@@ -683,7 +698,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	vindex(tri_ptr, row_off, row_ptr);
 #if TIME > 1
 	//time: rasterize - indexed rows in triangles
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 #if DEBUG > 2 
 	std::cout << "The index of each row." << std::endl;
@@ -704,7 +721,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	);
 #if TIME > 1
 	//time: rasterize - counted columns
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 #if DEBUG > 2
 	std::cout << "How many columns does each row have?" << std::endl;
@@ -718,7 +737,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		(viskores::cont::make_ArrayHandleCast<viskores::Id>(col_count), col_off);
 #if TIME > 1
 	//time: rasterize - retrieved column offsets by row
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 #if DEBUG > 2 
 	std::cout << "Column offsets by row" << std::endl;
@@ -760,7 +781,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		 
 #if TIME > 1
 	//time: rasterize - retrieved fragment (row, column) positions
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 #if DEBUG > 3 
 	std::cout << "Frag positions by row and column in every triangle." << std::endl;
@@ -819,7 +842,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if TIME > 0
 	//time: rasterized triangles. acquired all fragments
-	timer.push_back(std::chrono::high_resolution_clock::now());
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();
 #endif
 
 /*
@@ -836,13 +861,15 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//Allocate ArrayHandles for Sorting
 	viskores::cont::ArrayHandle<viskores::Vec2i> cpos;
 	cpos.DeepCopyFrom(pos);	
-	viskores::cont::ArrayHandleCounting<viskores::Id> tmp_inds(0, 1, fragments);
+	viskores::cont::ArrayHandleCounting<viskores::Id> tmp_inds(0, 1, fragments); //ArrayHandleIndex
 	viskores::cont::ArrayHandle<viskores::Id> sorted_inds;
 	viskores::cont::Algorithm::Copy(tmp_inds, sorted_inds);
 
 #if TIME > 1
 	//time: sort - duplicate fragments
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 
 #if DEBUG > 0
@@ -861,7 +888,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 #endif
 #if TIME > 0 
 	//time: sorted fragments
-	timer.push_back(std::chrono::high_resolution_clock::now());
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();
 #endif
 
 /*
@@ -888,7 +917,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//start: select - count unique
 #if TIME > 1
 	//time: select - count unique positions
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 	//start: select - count overlapping fragments at each position
 	viskores::cont::ArrayHandle<viskores::Vec2i> true_fragments;
@@ -899,7 +930,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		       true_fragments, pos_count, std::plus<int>());	
 #if TIME > 1
 	//time: select - counted overlapping fragments
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 
 #if DEBUG > 3
@@ -932,14 +965,18 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//start: select - get offset of unique positions
 #if TIME > 1
 	//time: select - retrieved offsets
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 
 	//select - get index of minimum depth fragments not needed for viskores
 	//start: select - get index of minimum depth fragment at each positions
 #if TIME > 1
 	//time: select - retrieved indexes
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 
 	/* Viskores Implementation */
@@ -951,7 +988,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if TIME > 1
 	//time: select - retrieved minimum positions
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 
 #if DEBUG > 3
@@ -1050,7 +1089,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 #endif
 #if TIME > 0
 	//time: got visible fragments
-	timer.push_back(std::chrono::high_resolution_clock::now());
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();
 #endif
 
 /*
@@ -1068,7 +1109,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if TIME > 1
 	//time: write - retrieved buffer positions
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 #if DEBUG > 3
 	std::cout << "Row major position by fragment" << std::endl;
@@ -1101,7 +1144,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if TIME > 1
 	//time: write - scattered colors
-	timer.push_back(std::chrono::high_resolution_clock::now());	
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();	
 #endif
 
 	//start: write - write to final image (Image struct)
@@ -1118,7 +1163,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if TIME > 0
 	//time: write final image to output
-	timer.push_back(std::chrono::high_resolution_clock::now());
+	timer.Stop();
+	times.push_back(timer.GetElapsedTime());
+	timer.Start();
 #endif
 
 /*
@@ -1133,12 +1180,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 #if TIME > 0
 	if(!warmup)
 	{
-		auto p = timer.begin();
-		for(auto i = timer.begin() + 1; i != timer.end(); i++)
+		for(auto i = times.begin(); i != times.end(); i++)
 		{
-			auto duration = std::chrono::duration_cast<std::chrono::microseconds>(*i - *p);
-			p = i;
-			std::cout << "\t" << duration.count();	
+			std::cout << ", " << *i * 1000;	
 		}
 		std::cout << std::endl;
 	}
