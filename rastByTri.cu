@@ -574,9 +574,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	invoke(fragCount, p1, p2, p3, frags);
 #if TIME > 1
 	//time: rasterize - count fragments
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 
 
@@ -590,9 +588,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 			write_index);
 #if TIME > 1
 	//time: rasterize - retrieved write positions
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 #if DEBUG > 1
 	std::cout << "write position by triangle: " << std::endl;
@@ -612,9 +608,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	vexpand(frags, frag_tri);
 #if TIME > 1
 	//time: rasterize - associate fragmetns to triangles
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 #if DEBUG > 3
 	std::cout << "Which triangle does each fragment belong to?" << std::endl;
@@ -651,9 +645,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	invoke(rowCount, p1, p2, p3, rows);
 #if TIME > 1
 	//time: rasterize - count rows
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 #if DEBUG > 1
 	std::cout << "How many rows does each triangle have?" << std::endl;
@@ -664,9 +656,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	viskores::cont::Algorithm::ScanExclusive(viskores::cont::make_ArrayHandleCast<viskores::Id>(rows), row_off);
 #if TIME > 1
 	//time: rasterize - get row offsets in triangles
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 #if DEBUG > 1
 	std::cout << "What is the row offset of each triangle?" << std::endl;
@@ -683,9 +673,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	vexpand(rows, tri_ptr);
 #if TIME > 1
 	//time: rasterize - associated rows to triangles
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 #if DEBUG > 2 
 	std::cout << "What triangle does each row belong to?" << std::endl;
@@ -698,9 +686,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	vindex(tri_ptr, row_off, row_ptr);
 #if TIME > 1
 	//time: rasterize - indexed rows in triangles
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 #if DEBUG > 2 
 	std::cout << "The index of each row." << std::endl;
@@ -721,9 +707,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	);
 #if TIME > 1
 	//time: rasterize - counted columns
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 #if DEBUG > 2
 	std::cout << "How many columns does each row have?" << std::endl;
@@ -737,9 +721,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		(viskores::cont::make_ArrayHandleCast<viskores::Id>(col_count), col_off);
 #if TIME > 1
 	//time: rasterize - retrieved column offsets by row
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 #if DEBUG > 2 
 	std::cout << "Column offsets by row" << std::endl;
@@ -781,9 +763,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		 
 #if TIME > 1
 	//time: rasterize - retrieved fragment (row, column) positions
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 #if DEBUG > 3 
 	std::cout << "Frag positions by row and column in every triangle." << std::endl;
@@ -842,9 +822,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if TIME > 0
 	//time: rasterized triangles. acquired all fragments
-	timer.Stop();
 	times.push_back(timer.GetElapsedTime());
-	timer.Start();
 #endif
 
 /*
@@ -861,15 +839,13 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//Allocate ArrayHandles for Sorting
 	viskores::cont::ArrayHandle<viskores::Vec2i> cpos;
 	cpos.DeepCopyFrom(pos);	
-	viskores::cont::ArrayHandleCounting<viskores::Id> tmp_inds(0, 1, fragments); //ArrayHandleIndex
+	viskores::cont::ArrayHandleIndex tmp_inds(fragments); //ArrayHandleIndex
 	viskores::cont::ArrayHandle<viskores::Id> sorted_inds;
 	viskores::cont::Algorithm::Copy(tmp_inds, sorted_inds);
 
 #if TIME > 1
 	//time: sort - duplicate fragments
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 
 #if DEBUG > 0
@@ -888,9 +864,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 #endif
 #if TIME > 0 
 	//time: sorted fragments
-	timer.Stop();
 	times.push_back(timer.GetElapsedTime());
-	timer.Start();
 #endif
 
 /*
@@ -917,9 +891,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//start: select - count unique
 #if TIME > 1
 	//time: select - count unique positions
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 	//start: select - count overlapping fragments at each position
 	viskores::cont::ArrayHandle<viskores::Vec2i> true_fragments;
@@ -930,9 +902,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		       true_fragments, pos_count, std::plus<int>());	
 #if TIME > 1
 	//time: select - counted overlapping fragments
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 
 #if DEBUG > 3
@@ -965,18 +935,14 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//start: select - get offset of unique positions
 #if TIME > 1
 	//time: select - retrieved offsets
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 
 	//select - get index of minimum depth fragments not needed for viskores
 	//start: select - get index of minimum depth fragment at each positions
 #if TIME > 1
 	//time: select - retrieved indexes
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 
 	/* Viskores Implementation */
@@ -988,9 +954,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if TIME > 1
 	//time: select - retrieved minimum positions
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 
 #if DEBUG > 3
@@ -1089,9 +1053,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 #endif
 #if TIME > 0
 	//time: got visible fragments
-	timer.Stop();
 	times.push_back(timer.GetElapsedTime());
-	timer.Start();
 #endif
 
 /*
@@ -1109,9 +1071,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if TIME > 1
 	//time: write - retrieved buffer positions
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 #if DEBUG > 3
 	std::cout << "Row major position by fragment" << std::endl;
@@ -1144,9 +1104,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if TIME > 1
 	//time: write - scattered colors
-	timer.Stop();
-	times.push_back(timer.GetElapsedTime());
-	timer.Start();	
+	times.push_back(timer.GetElapsedTime());	
 #endif
 
 	//start: write - write to final image (Image struct)
@@ -1163,9 +1121,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 #if TIME > 0
 	//time: write final image to output
-	timer.Stop();
 	times.push_back(timer.GetElapsedTime());
-	timer.Start();
 #endif
 
 /*
@@ -1178,11 +1134,15 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//	std::cout<<(int)col[i]<<","<<(int)col[i+1]<<","<<(int)col[i+2]<<std::endl;
 	//}
 #if TIME > 0
+	timer.Stop();
 	if(!warmup)
 	{
-		for(auto i = times.begin(); i != times.end(); i++)
+		auto p = times.begin();
+		std::cout << ", " << *p * 1e6;
+		for(auto i = times.begin() + 1; i != times.end(); i++)
 		{
-			std::cout << ", " << *i * 1000;	
+			std::cout << ", " << (*i - *p) * 1e6;	
+			p = i;
 		}
 		std::cout << std::endl;
 	}
