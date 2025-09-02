@@ -379,13 +379,14 @@ void vexpand(viskores::cont::ArrayHandle<CountT> &counts,
 		 viskores::cont::ArrayHandle<T> &output)
 {
 	viskores::Id length = counts.GetNumberOfValues();
-	viskores::cont::ArrayHandle<T> sequence;
-	viskores::cont::ArrayCopyDevice
-		(viskores::cont::make_ArrayHandleCounting<T>(0, 1, length),
-		 sequence);
-	vduplicate<T, CountT>(
+	viskores::cont::ArrayHandleCounting<T> sequence(0, 1, length);
+	viskores::cont::Invoker invoke;
+	viskores::worklet::ScatterCounting scatter(counts);
+	ExpandWorklet expand_worklet;
+	invoke(
+		expand_worklet,
+		scatter,
 		sequence,
-		counts,
 		output
 	);
 }
