@@ -27,6 +27,7 @@
 
 #include <viskores/cont/Algorithm.h>
 #include <viskores/cont/ArrayCopy.h>
+#include <viskores/cont/ArrayCopyDevice.h>
 #include <viskores/cont/ArrayHandle.h>
 #include <viskores/cont/ArrayHandleCast.h>
 #include <viskores/cont/ArrayHandleConstant.h>
@@ -63,8 +64,8 @@ struct my_maximum
 
 struct ExpandWorklet : viskores::worklet::WorkletMapField
 {
-	using ControlSignature = void (FieldIn input, FieldIn counts, FieldOut output);
-	using ExecutionSignature = void(_1, _3, VisitIndex);
+	using ControlSignature = void (FieldIn input, FieldOut output);
+	using ExecutionSignature = void(_1, _2, VisitIndex);
 	using InputDomain = _1;
 
 	using ScatterType = viskores::worklet::ScatterCounting;
@@ -358,7 +359,6 @@ void vduplicate(const viskores::cont::ArrayHandle<T> &values,
 		expand_worklet,
 		scatter,
 		values,
-		count,
 		output
 	);
 
@@ -380,7 +380,7 @@ void vexpand(viskores::cont::ArrayHandle<CountT> &counts,
 {
 	viskores::Id length = counts.GetNumberOfValues();
 	viskores::cont::ArrayHandle<T> sequence;
-	viskores::cont::ArrayCopy
+	viskores::cont::ArrayCopyDevice
 		(viskores::cont::make_ArrayHandleCounting<T>(0, 1, length),
 		 sequence);
 	vduplicate<T, CountT>(
@@ -839,9 +839,9 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//Allocate ArrayHandles for Sorting
 	viskores::cont::ArrayHandle<viskores::Vec2i> cpos;
 	cpos.DeepCopyFrom(pos);	
-	viskores::cont::ArrayHandleIndex tmp_inds(fragments); //ArrayHandleIndex
+	viskores::cont::ArrayHandleIndex tmp_inds(fragments);
 	viskores::cont::ArrayHandle<viskores::Id> sorted_inds;
-	viskores::cont::Algorithm::Copy(tmp_inds, sorted_inds);
+	viskores::cont::ArrayCopyDevice(tmp_inds, sorted_inds);
 
 #if TIME > 1
 	//time: sort - duplicate fragments
