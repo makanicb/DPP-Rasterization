@@ -77,7 +77,20 @@ struct ExpandWorklet : viskores::worklet::WorkletMapField
 	}
 };
 
-template<typename PermutationStorage>
+struct MarkPartitions : viskores::worklet::WorkletMapField
+{
+	using ControlSignature = void (FieldIn offsets, FieldIn counts, WholeArrayOut output);
+	using ExecutionSignature = void(_1, _2, _3);
+	using InputDomain = _1;
+
+	template<typename IndexT, typename CountT, typename PortalT>
+	VISKORES_EXEC void operator() (const IndexT &off, const CountT &count, PortalT &out) const
+	{
+		if(count > 0) out.Set(off, 1);
+	}
+};
+
+//template<typename PermutationStorage>
 struct FillImage : viskores::worklet::WorkletMapField
 {
 	using ControlSignature = void(FieldIn colors, FieldIn map, FieldIn stencil, WholeArrayOut image);
@@ -374,21 +387,23 @@ void vduplicate(const viskores::cont::ArrayHandle<T> &values,
     the value at an element's indice is the index 
     of the group it belongs to.
 */
-template<typename T, typename CountT>
-void vexpand(viskores::cont::ArrayHandle<CountT> &counts,
-		 viskores::cont::ArrayHandle<T> &output)
+template<typename T, typename CountT, typename IndexT>
+void vexpand(viskores::cont::ArrayHandle<IndexT> &map,
+		viskores::cont::ArrayHandle<CountT> &counts,
+		viskores::cont::ArrayHandle<T> &output,
+		viskores::Id num)
 {
-	viskores::Id length = counts.GetNumberOfValues();
-	viskores::cont::ArrayHandleCounting<T> sequence(0, 1, length);
+	viskores::cont::ArrayHandle<T> tmp_output;
+	tmp_output.AllocateAndFill(num, 0);
 	viskores::cont::Invoker invoke;
-	viskores::worklet::ScatterCounting scatter(counts);
-	ExpandWorklet expand_worklet;
+	MarkPartitions mark_partitions;
 	invoke(
-		expand_worklet,
-		scatter,
-		sequence,
-		output
+		mark_partitions,
+		map,
+		counts, 
+		tmp_output
 	);
+	viskores::cont::Algorithm::ScanExclusive(tmp_output, output);
 }
 
 /*
@@ -606,7 +621,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//start: rasterize - associate fragments to triangles
 
 	viskores::cont::ArrayHandle<viskores::Id> frag_tri;
-	vexpand(frags, frag_tri);
+	vexpand(write_index, frags, frag_tri, fragments);
 #if TIME > 1
 	//time: rasterize - associate fragmetns to triangles
 	times.push_back(timer.GetElapsedTime());	
@@ -670,8 +685,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 	//Initialize ArrayHandles
 	viskores::cont::ArrayHandle<viskores::Id> tri_ptr;
-	
-	vexpand(rows, tri_ptr);
+	vexpand(row_off, rows, tri_ptr, num_rows);
 #if TIME > 1
 	//time: rasterize - associated rows to triangles
 	times.push_back(timer.GetElapsedTime());	
@@ -737,7 +751,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	viskores::cont::ArrayHandle<viskores::Id> frag_col;
 
 	//Determine fragment rows and columns
-	vexpand(col_count, frag_row);
+	vexpand(col_off, col_count, frag_row, fragments);
 	//std::cout << "Frag Rows" << std::endl;
 	//print_ArrayHandle(frag_row);
 
@@ -1094,7 +1108,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	//auto max_pos = viskores::cont::Algorithm::Reduce(rowMajorPos, (viskores::Id) 0,
 	//	       [](const auto& a, const auto& b){return std::max(a,b);});	
 	//std::cout << max_pos << std::endl;
-	FillImage<viskores::cont::StorageTagBasic> fill_image;
+	FillImage fill_image;
 	invoke(
 		fill_image,
 		cfrag_colors,
