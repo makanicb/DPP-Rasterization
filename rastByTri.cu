@@ -77,13 +77,13 @@ struct ExpandWorklet : viskores::worklet::WorkletMapField
 	}
 };
 
-struct  MarkPartition : viskores::worklet::WorkletMapField
+struct  MarkPartitions : viskores::worklet::WorkletMapField
 {
 	using ControlSignature = void (FieldIn values, FieldIn offsets, FieldIn counts, WholeArrayOut output);
 	using ExecutionSignature = void(_1, _2, _3, _4);
 	using InputDomain = _1;
 
-	template<typename, ValueT, typename IndexT, typename CountT, typename PortalT>
+	template<typename ValueT, typename IndexT, typename CountT, typename PortalT>
 	VISKORES_EXEC void operator() (const ValueT &val, const IndexT &off, const CountT &count, PortalT &out) const
 	{
 		if(count > 0) out.Set(off, val);
@@ -396,7 +396,7 @@ void vexpand(viskores::cont::ArrayHandle<IndexT> &map,
 	//Get size of map
 	viskores::Id length = map.GetNumberOfValues();
 	//Create sequence 
-	viskores::cont::ArrayHandleIndex sequence(length);
+	viskores::cont::ArrayHandleCounting<T> sequence(0, 1, length);
 	//Create temporary output 
 	viskores::cont::ArrayHandle<T> tmp_output;
 	tmp_output.AllocateAndFill(num, 0);
@@ -409,7 +409,7 @@ void vexpand(viskores::cont::ArrayHandle<IndexT> &map,
 		counts, 
 		tmp_output
 	);
-	viskores::cont::Algorithm::ScanExclusive(tmp_output, output);
+	viskores::cont::Algorithm::ScanInclusive(tmp_output, output, my_maximum<T>());
 }
 
 /*
@@ -488,6 +488,17 @@ void print_float_vec(thrust::device_vector<float>::iterator start,
 
 template<typename T>
 void print_ArrayHandle(const viskores::cont::ArrayHandle<T> &arr)
+{
+	auto arr_Reader = arr.ReadPortal();
+	for (viskores::Id i = 0; i < arr_Reader.GetNumberOfValues(); i++)
+	{
+		std::cout << arr_Reader.Get(i) << "\t";
+	}
+	std::cout << std::endl;
+}
+
+template<typename IndexT, typename ValueT>
+void print_ArrayHandle(const viskores::cont::ArrayHandlePermutation<IndexT, ValueT> &arr)
 {
 	auto arr_Reader = arr.ReadPortal();
 	for (viskores::Id i = 0; i < arr_Reader.GetNumberOfValues(); i++)
@@ -747,8 +758,8 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 #if DEBUG > 2 
 	std::cout << "Column offsets by row" << std::endl;
 	print_ArrayHandle(col_off);
-	std::cout << "Number of columns " <<  col_off.ReadPortal.Get(num_rows-1) + 
-		col_count.ReadPortal.Get(num_rows-1) << std::endl;
+	std::cout << "Number of columns " <<  col_off.ReadPortal().Get(num_rows-1) + 
+		col_count.ReadPortal().Get(num_rows-1) << std::endl;
 #endif
 	assert((fragments == (int)col_off.ReadPortal().Get(num_rows-1) + (int)col_count.ReadPortal().Get(num_rows-1)));
 	//start: rasterize - get fragment (row, column) positions 
