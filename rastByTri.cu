@@ -219,7 +219,7 @@ struct colCount
 
 void expand_int
 	(thrust::device_vector<int>::iterator map,
-	 thrust::device_vector<int>::iterator pred,
+	 thrust::device_vector<int>::iterator count,
 	 thrust::device_vector<int>::iterator start,
 	 thrust::device_vector<int>::iterator end,
 	 int num)
@@ -228,7 +228,7 @@ void expand_int
 		(thrust::counting_iterator<int>(0),
 		 thrust::counting_iterator<int>(num),
 		 map,
-		 pred,
+		 count,
 		 start);
 
 	thrust::inclusive_scan
