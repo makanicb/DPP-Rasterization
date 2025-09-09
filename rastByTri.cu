@@ -77,16 +77,16 @@ struct ExpandWorklet : viskores::worklet::WorkletMapField
 	}
 };
 
-struct MarkPartitions : viskores::worklet::WorkletMapField
+struct  MarkPartition : viskores::worklet::WorkletMapField
 {
-	using ControlSignature = void (FieldIn offsets, FieldIn counts, WholeArrayOut output);
-	using ExecutionSignature = void(_1, _2, _3);
+	using ControlSignature = void (FieldIn values, FieldIn offsets, FieldIn counts, WholeArrayOut output);
+	using ExecutionSignature = void(_1, _2, _3, _4);
 	using InputDomain = _1;
 
-	template<typename IndexT, typename CountT, typename PortalT>
-	VISKORES_EXEC void operator() (const IndexT &off, const CountT &count, PortalT &out) const
+	template<typename, ValueT, typename IndexT, typename CountT, typename PortalT>
+	VISKORES_EXEC void operator() (const ValueT &val, const IndexT &off, const CountT &count, PortalT &out) const
 	{
-		if(count > 0) out.Set(off, 1);
+		if(count > 0) out.Set(off, val);
 	}
 };
 
@@ -393,12 +393,18 @@ void vexpand(viskores::cont::ArrayHandle<IndexT> &map,
 		viskores::cont::ArrayHandle<T> &output,
 		viskores::Id num)
 {
+	//Get size of map
+	viskores::Id length = map.GetNumberOfValues();
+	//Create sequence 
+	viskores::cont::ArrayHandleIndex sequence(length);
+	//Create temporary output 
 	viskores::cont::ArrayHandle<T> tmp_output;
 	tmp_output.AllocateAndFill(num, 0);
 	viskores::cont::Invoker invoke;
 	MarkPartitions mark_partitions;
 	invoke(
 		mark_partitions,
+		sequence,
 		map,
 		counts, 
 		tmp_output
