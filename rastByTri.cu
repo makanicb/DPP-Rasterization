@@ -2,7 +2,7 @@
 #include <cmath>
 #include <cassert>
 #include <limits>
-#include <chrono>
+#include <string>
 
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
@@ -358,7 +358,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		thrust::device_vector<thrust::tuple<float, float, float>> &p2,
 		thrust::device_vector<thrust::tuple<float, float, float>> &p3,
 		thrust::device_vector<thrust::tuple<char, char, char>> &color,
-		int numTri, int width, int height, Image &final_image, bool warmup)
+		int numTri, int width, int height, Image *final_image, bool warmup)
 {
 #if TIME > 0 
 	//Get number of breakpoints
@@ -781,7 +781,6 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::fill(img.begin(), img.end(), thrust::make_tuple<unsigned char,unsigned char,unsigned char>(255,255,255));
 	thrust::scatter_if(cfrag_colors.begin(), cfrag_colors.end(), rowMajorPos.begin(), write_frag.begin(), img.begin());
 
-	thrust::host_vector<thrust::tuple<char,char,char>> h_img = img;
 #if TIME > 1 
 	//time: write - scattered fragments
 	cudaEventRecord(timer[break_count++]);
@@ -805,6 +804,12 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::device_vector<char> img_data(width * height * 3);
 	thrust::transform(channel_type.begin(), channel_type.end(), channel_pixel_color, img_data.begin(), channelValue());
 
+	thrust::host_vector<char> img_data_host = img_data;
+
+	//Copy to final image buffer
+	memcpy(final_image->data, img_data_host.data(), img_data_host.size());
+
+	/*
 	int count = 0;
 	for(auto i = h_img.begin(); i < h_img.end(); i++)
 	{
@@ -813,6 +818,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		final_image.data[count++] = thrust::get<1>(t);
 		final_image.data[count++] = thrust::get<2>(t);
 	}
+	*/
 
 #if TIME > 0
 	//time: write final image to output
