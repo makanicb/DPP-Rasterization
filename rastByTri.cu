@@ -2,6 +2,8 @@
 #include <cmath>
 #include <cassert>
 #include <limits>
+#include <algorithm>
+#include <cstring>
 
 /*
 #include <thrust/device_vector.h>
@@ -33,6 +35,7 @@
 #include <viskores/cont/ArrayHandleConstant.h>
 #include <viskores/cont/ArrayHandleCounting.h>
 #include <viskores/cont/ArrayHandleDiscard.h>
+#include <viskores/cont/ArrayHandleGroupVec.h>
 #include <viskores/cont/ArrayHandlePermutation.h>
 #include <viskores/cont/Invoker.h>
 #include <viskores/cont/Timer.h>
@@ -575,7 +578,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		viskores::cont::ArrayHandle<viskores::Vec3f> &p2,
 		viskores::cont::ArrayHandle<viskores::Vec3f> &p3,
 		viskores::cont::ArrayHandle<viskores::Vec3ui_8> &color,
-		int numTri, int width, int height, Image &final_image, bool warmup)
+		int numTri, int width, int height, Image *final_image, bool warmup)
 {
 #if TIME > 0
 	//Set up timing systems
@@ -1114,8 +1117,14 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	
 	//viskores::cont::ArrayHandle<viskores:Vec3ui_8> vbg;
 	//vbg.AllocateAndFill(width * height, thrust::make_tuple<char,char,char>(127,127,127));
-	viskores::cont::ArrayHandle<viskores::Vec3ui_8> img;
-	img.AllocateAndFill(width * height, viskores::make_Vec<viskores::UInt8>(255,255,255));
+
+	//Create final image buffer
+	viskores::cont::ArrayHandle<viskores::UInt8> img_final;
+	img_final.AllocateAndFill(width * height * 3, 255);
+
+	//Create proxy buffer for operating on 3 byte RBG channels
+	viskores::cont::ArrayHandleGroupVec<viskores::cont::ArrayHandle<viskores::UInt8>, 3> img_proxy(img_final);
+
 	/*
 	std::cout << cfrag_colors.GetNumberOfValues() << std::endl;
 	std::cout << rowMajorPos.GetNumberOfValues() << std::endl;
@@ -1131,7 +1140,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		cfrag_colors,
 		rowMajorPos,
 		write_frag,
-		img
+		img_proxy
 	);
 
 #if TIME > 1
@@ -1141,7 +1150,21 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 
 	//start: write - write to final image (Image struct)
 
-	auto img_Reader = img.ReadPortal();
+	//Create reader
+	auto img_Reader = img_final.ReadPortal();
+
+	//Create vector for contiguous storage
+	std::vector<char> img_data(img_Reader.GetNumberOfValues());
+	
+	//Copy data to image data vector
+	copy(viskores::cont::ArrayPortalToIteratorBegin(img_Reader),
+	     viskores::cont::ArrayPortalToIteratorEnd(img_Reader),
+	     img_data.begin());
+
+	//Copy image data to final image
+	memcpy(final_image->data, img_data.data(), img_data.size());
+
+	/*
 	int count = 0;
 	for(viskores::Id i = 0; i < img_Reader.GetNumberOfValues(); i++)
 	{
@@ -1149,7 +1172,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 		final_image.data[count++] = t[0];
 		final_image.data[count++] = t[1];
 		final_image.data[count++] = t[2];
-	}
+	}*/
 
 #if TIME > 0
 	//time: write final image to output
