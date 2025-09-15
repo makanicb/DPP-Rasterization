@@ -217,6 +217,39 @@ struct colCount
 	}
 };
 
+struct group3
+{
+	__host__ __device__
+	int operator()(int x)
+	{
+		return x / 3;
+	}
+};
+
+struct index3
+{
+	__host__ __device__
+	int operator()(int x)
+	{
+		return x % 3;
+	}
+};
+
+struct channelValue
+{
+	__host__ __device__
+	char operator()(int id, thrust::tuple<char,char,char> color)
+	{
+		switch (id)
+		{
+			case 0: return thrust::get<0>(color);
+			case 1: return thrust::get<1>(color);
+			case 2: return thrust::get<2>(color);
+			default: return -1;
+		}
+	}
+};
+
 void expand_int
 	(thrust::device_vector<int>::iterator map,
 	 thrust::device_vector<int>::iterator count,
@@ -755,6 +788,23 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #endif
 	
 	//start: write - write colors to final image (Image struct)
+
+	//Create an array of RBG channels
+	//Associate each channel to a pixel
+	auto channel_pixel_index = thrust::make_transform_iterator(thrust::make_counting_iterator<int>(0),
+							 	   group3());
+	//Gather pixel colors
+	auto channel_pixel_color = thrust::make_permutation_iterator(img.begin(), channel_pixel_index);
+
+	//Get channel type (R = 0, G = 1, B = 2)
+	thrust::device_vector<int> channel_type(width * height * 3);
+	thrust::transform(thrust::make_counting_iterator<int>(0), thrust::make_counting_iterator<int>(width * height * 3),
+			  channel_type.begin(), index3());
+
+	//Create channel vector
+	thrust::device_vector<char> img_data(width * height * 3);
+	thrust::transform(channel_type.begin(), channel_type.end(), channel_pixel_color, img_data.begin(), channelValue());
+
 	int count = 0;
 	for(auto i = h_img.begin(); i < h_img.end(); i++)
 	{
