@@ -18,7 +18,7 @@ set_property(CACHE TIME_LEVEL PROPERTY STRINGS "0" "1" "2")
 
 set(CMAKE_CUDA_ARCHITECTURES 80)
 
-list(APPEND CMAKE_PREFIX_PATH "/home/makanib/cdux/viskores-install")
+list(APPEND CMAKE_PREFIX_PATH "/global/common/software/m2956/viskores") # Computer dependent. Set for your system.
 find_package(Viskores REQUIRED)
 
 # find_package(Thrust REQUIRED CONFIG)
