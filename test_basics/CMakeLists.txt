@@ -11,4 +11,9 @@ find_package(Viskores REQUIRED)
 
 add_executable(test test_add_array.cu)
 target_link_libraries(test viskores::cont)
+set(my_comp_options "-g -O3")
+target_compile_options(test PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:${my_comp_options}>
+        $<$<COMPILE_LANGUAGE:CUDA>:${my_comp_options}>
+)
 target_compile_definitions(test PRIVATE EXP=${TEST_EXP})
