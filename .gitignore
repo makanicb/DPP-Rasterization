@@ -8,6 +8,5 @@ pnmtopng
 data/
 rast
 start_int_gpu.sh
-load_tau.sh
 triCount
 build*/
