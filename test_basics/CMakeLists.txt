@@ -8,11 +8,18 @@ endif()
 
 project(TestAddArrays LANGUAGES CXX CUDA)
 
-add_executable(test test_add_arrays.cu)
+add_executable(test_add test_add_arrays.cu)
 
-set(my_compile_options "-O3")
-target_compile_options(test PRIVATE
+target_compile_options(test_add PRIVATE
         $<$<COMPILE_LANGUAGE:CXX>:${my_compile_options}>
         $<$<COMPILE_LANGUAGE:CUDA>:${my_compile_options}>
 )
-target_compile_definitions(test PRIVATE EXP=${TEST_EXP})
+target_compile_definitions(test_add PRIVATE EXP=${TEST_EXP})
+
+add_executable(test_work test_functor.cu)
+
+target_compile_options(test_work PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:${my_compile_options}>
+        $<$<COMPILE_LANGUAGE:CUDA>:${my_compile_options}>
+)
+target_compile_definitions(test_work PRIVATE EXP=${TEST_EXP})
