@@ -13,7 +13,7 @@ struct expensiveFunctor
 	{
 		int prod = 1;
 		int mod = 4747;
-		for(int i = 0; i < a * 1e3; i++)
+		for(int i = 0; i < a * 1e4; i++)
 		{
 			prod = (prod * b) % mod;
 		}
