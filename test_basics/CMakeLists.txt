@@ -23,3 +23,10 @@ target_compile_options(test_work PRIVATE
         $<$<COMPILE_LANGUAGE:CUDA>:${my_compile_options}>
 )
 target_compile_definitions(test_work PRIVATE EXP=${TEST_EXP})
+
+add_executable(test_reduce test_reduce.cu)
+
+target_compile_options(test_reduce PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:${my_compile_options}>
+        $<$<COMPILE_LANGUAGE:CUDA>:${my_compile_options}>
+)
