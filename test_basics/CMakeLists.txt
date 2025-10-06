@@ -31,3 +31,10 @@ target_compile_options(test_reduce PRIVATE
         $<$<COMPILE_LANGUAGE:CXX>:${my_comp_options}>
         $<$<COMPILE_LANGUAGE:CUDA>:${my_comp_options}>
 )
+
+add_executable(test_mem_scale test_mem_scale.cu)
+target_link_libraries(test_mem_scale viskores::cont)
+target_compile_options(test_mem_scale PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:${my_comp_options}>
+        $<$<COMPILE_LANGUAGE:CUDA>:${my_comp_options}>
+)
