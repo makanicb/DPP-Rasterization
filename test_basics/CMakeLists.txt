@@ -37,3 +37,10 @@ target_compile_options(test_mem_scale PRIVATE
         $<$<COMPILE_LANGUAGE:CXX>:${my_compile_options}>
         $<$<COMPILE_LANGUAGE:CUDA>:${my_compile_options}>
 )
+
+add_executable(test_add_mem_scale test_add_mem_scale.cu)
+
+target_compile_options(test_add_mem_scale PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:${my_compile_options}>
+        $<$<COMPILE_LANGUAGE:CUDA>:${my_compile_options}>
+)

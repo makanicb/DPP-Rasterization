@@ -6,32 +6,17 @@
 #include<thrust/functional.h>
 #include<thrust/transform.h>
 
-struct expensiveFunctor
-{
-	__host__ __device__
-	int operator()(const int a, const int b) const
-	{
-		int prod = 1;
-		int mod = 4747;
-		for(int i = 0; i < a * 1e4; i++)
-		{
-			prod = (prod * b) % mod;
-		}
-		return prod;
-	}
-};
-
 int main(int argc, char **argv)
 {
 	bool first = true;
-	for(int j = 0; j <= 20; j+=2)
+	for(int i = 0; i <= 30; i++)
 	{
 		//Initialize program
-		const unsigned int ARRAY_SIZE = pow(2, j);
+		const int ARRAY_SIZE = pow(2, i);
 
 		int start = first ? 0 : 1;
 		first = false;
-		for(int i = start; i < 2; i++)
+		for(int j = start; j < 2; j++)
 		{
 			//Initialize timer
 			cudaEvent_t start, stop;
@@ -49,12 +34,13 @@ int main(int argc, char **argv)
 
 			//Add arrays
 			thrust::device_vector<int> sum(ARRAY_SIZE);
-			thrust::transform(arr2.begin(), arr2.end(), arr1.begin(), sum.begin(), expensiveFunctor());
+			for(int k = 0; k < 100; k++)
+				thrust::transform(arr1.begin(), arr1.end(), arr2.begin(), sum.begin(), thrust::plus<int>());
 
 			//Stop timer
 			cudaEventRecord(stop);
 
-			if(i == 1)
+			if(j == 1)
 			{
 				//Print runtime
 				cudaEventSynchronize(stop);
