@@ -24,3 +24,10 @@ target_compile_options(test_work PRIVATE
         $<$<COMPILE_LANGUAGE:CUDA>:${my_comp_options}>
 )
 target_compile_definitions(test_work PRIVATE EXP=${TEST_EXP})
+
+add_executable(test_reduce test_reduce.cu)
+target_link_libraries(test_reduce viskores::cont)
+target_compile_options(test_reduce PRIVATE
+        $<$<COMPILE_LANGUAGE:CXX>:${my_comp_options}>
+        $<$<COMPILE_LANGUAGE:CUDA>:${my_comp_options}>
+)

@@ -38,28 +38,34 @@ int main(int argc, char **argv){
 	viskores::cont::Initialize(argc, argv, viskores::cont::InitializeOptions::AddHelp);
 	const int ARRAY_SIZE = (int) pow(2, EXP);
 
-	//Initialize and start timer
-	viskores::cont::Timer timer;	
-	timer.Start();
+	for(int i = 0; i < 2; i++)
+	{
+		//Initialize and start timer
+		viskores::cont::Timer timer;	
+		timer.Start();
 
-	//Initialize arrays
-	viskores::cont::ArrayHandle<int> arr1;
-	viskores::cont::ArrayHandle<int> arr2;
-	arr1.AllocateAndFill(ARRAY_SIZE, 256);
-	arr2.AllocateAndFill(ARRAY_SIZE, 1024);
+		//Initialize arrays
+		viskores::cont::ArrayHandle<int> arr1;
+		viskores::cont::ArrayHandle<int> arr2;
+		arr1.AllocateAndFill(ARRAY_SIZE, 256);
+		arr2.AllocateAndFill(ARRAY_SIZE, 1024);
 
-	//Apply the expensive worklet to the array
-	viskores::cont::ArrayHandle<int> sum;
-	viskores::cont::Invoker invoke;
-	ExpensiveWorklet expensive_worklet;
-	invoke(expensive_worklet, arr2, arr1, sum);
+		//Apply the expensive worklet to the array
+		viskores::cont::ArrayHandle<int> sum;
+		viskores::cont::Invoker invoke;
+		ExpensiveWorklet expensive_worklet;
+		invoke(expensive_worklet, arr2, arr1, sum);
 
-	//Stop timer
-	timer.Stop();
+		//Stop timer
+		timer.Stop();
 
-	//Print runtime
-	std::cout << "Time (microseconds) to add arrays (len=" << ARRAY_SIZE <<
-		"): " << timer.GetElapsedTime() * 1e6 << std::endl;
+		if(i == 1)
+		{
+			//Print runtime
+			std::cout << "Time (microseconds) to add arrays (len=" << ARRAY_SIZE <<
+				"): " << timer.GetElapsedTime() * 1e6 << std::endl;
+		}
+	}
 
 	return 0;
 }
