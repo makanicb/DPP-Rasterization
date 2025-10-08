@@ -26,16 +26,18 @@ int main(int argc, char **argv)
 			//Start timer
 			cudaEventRecord(start);
 
-			//Initialize arrays
-			thrust::device_vector<int> arr1(ARRAY_SIZE);
-			thrust::device_vector<int> arr2(ARRAY_SIZE);
-			thrust::fill(arr1.begin(), arr1.end(), 256);
-			thrust::fill(arr2.begin(), arr2.end(), 1024);
-
-			//Add arrays
-			thrust::device_vector<int> sum(ARRAY_SIZE);
 			for(int k = 0; k < 100; k++)
+			{
+				//Initialize arrays
+				thrust::device_vector<int> arr1(ARRAY_SIZE);
+				thrust::device_vector<int> arr2(ARRAY_SIZE);
+				thrust::fill(arr1.begin(), arr1.end(), 256);
+				thrust::fill(arr2.begin(), arr2.end(), 1024);
+
+				//Add arrays
+				thrust::device_vector<int> sum(ARRAY_SIZE);
 				thrust::transform(arr1.begin(), arr1.end(), arr2.begin(), sum.begin(), thrust::plus<int>());
+			}
 
 			//Stop timer
 			cudaEventRecord(stop);
