@@ -4,6 +4,7 @@
 
 #include <viskores/cont/Algorithm.h>
 #include <viskores/cont/ArrayHandle.h>
+#include <viskores/cont/cuda/internal/CudaAllocator.h>
 #include <viskores/cont/Initialize.h>
 #include <viskores/cont/Timer.h>
 
@@ -15,6 +16,8 @@ int main(int argc, char **argv){
 
 	//Initialize program
 	viskores::cont::Initialize(argc, argv, viskores::cont::InitializeOptions::AddHelp);
+	viskores::cont::cuda::internal::CudaAllocator::UsingManagedMemory();
+	viskores::cont::cuda::internal::CudaAllocator::ForceManagedMemoryOff();
 	const int ARRAY_SIZE = (int) pow(2, EXP);
 
 	//Initialize and start timer

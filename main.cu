@@ -7,6 +7,7 @@
 
 #include <viskores/cont/Initialize.h>
 #include <viskores/cont/ArrayHandle.h>
+#include <viskores/cont/cuda/internal/CudaAllocator.h>
 #include <viskores/Types.h>
 
 #include <iostream>
@@ -294,6 +295,8 @@ int main(int argc, char **argv)
 {
 	//initialize viskores
 	viskores::cont::Initialize(argc, argv, viskores::cont::InitializeOptions::AddHelp);
+	viskores::cont::cuda::internal::CudaAllocator::UsingManagedMemory();
+        viskores::cont::cuda::internal::CudaAllocator::ForceManagedMemoryOff();
 
 	int scale = 1;
 	int subdivisions = 0;
