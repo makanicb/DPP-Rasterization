@@ -257,14 +257,14 @@ void expand_int
 	 thrust::device_vector<int>::iterator end,
 	 int num)
 {
-	//Initialize timer
+	/*//Initialize timer
 	cudaEvent_t t_start, t_scat, t_fill;
 	cudaEventCreate(&t_start);
 	cudaEventCreate(&t_scat);
-	cudaEventCreate(&t_fill);
+	cudaEventCreate(&t_fill);*/
 
 	//Start timer
-	cudaEventRecord(t_start);
+	//cudaEventRecord(t_start);
 
 	thrust::scatter_if
 		(thrust::counting_iterator<int>(0),
@@ -272,20 +272,20 @@ void expand_int
 		 map,
 		 count,
 		 start);
-	cudaEventRecord(t_scat);
+	//cudaEventRecord(t_scat);
 
 	thrust::inclusive_scan
 		(start,
 		 end,
 		 start,
 		 thrust::maximum<int>());
-	cudaEventRecord(t_fill);
+	//cudaEventRecord(t_fill);
 	
-	cudaEventSynchronize(t_fill);
+	/*cudaEventSynchronize(t_fill);
 	float r_scat = 0, r_fill = 0;
 	cudaEventElapsedTime(&r_scat, t_start, t_scat);
 	cudaEventElapsedTime(&r_fill, t_scat, t_fill);
-	std::cout << r_scat * 1e3 << ", " << r_fill * 1e3 << std::endl;
+	std::cout << r_scat * 1e3 << ", " << r_fill * 1e3 << std::endl;*/
 }	
 
 void index_int
@@ -380,7 +380,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 #if TIME > 0 
 	//Get number of breakpoints
 #if TIME > 1
-#define BREAKS 23
+#define BREAKS 24
 #else
 #define BREAKS 5
 #endif
@@ -432,7 +432,13 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	print_int_vec(write_index.begin(), write_index.end());
 #endif
 
+	//time: rasterize - record total number of fragments
 	int fragments = write_index[numTri-1] + frags[numTri-1];
+	
+#if TIME > 1
+	//time: rasterize - record total number of fragments
+	cudaEventRecord(timer[break_count++]);	
+#endif
 #if DEBUG > 1	
 	std::cout << "Number of fragments: " << fragments << std::endl;
 #endif
