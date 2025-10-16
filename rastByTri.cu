@@ -396,6 +396,13 @@ void vexpand(viskores::cont::ArrayHandle<IndexT> &map,
 		viskores::cont::ArrayHandle<T> &output,
 		viskores::Id num)
 {
+
+	//Set up timer
+	viskores::Float64 t_init, t_scat, t_fill;
+	viskores::cont::Timer timer;
+	timer.Start();
+
+	//Initialize
 	//Get size of map
 	viskores::Id length = map.GetNumberOfValues();
 	//Create sequence 
@@ -403,6 +410,9 @@ void vexpand(viskores::cont::ArrayHandle<IndexT> &map,
 	//Create temporary output 
 	viskores::cont::ArrayHandle<T> tmp_output;
 	tmp_output.AllocateAndFill(num, 0);
+	t_init = timer.GetElapsedTime();
+
+	//Scatter
 	viskores::cont::Invoker invoke;
 	MarkPartitions mark_partitions;
 	invoke(
@@ -412,7 +422,14 @@ void vexpand(viskores::cont::ArrayHandle<IndexT> &map,
 		counts, 
 		tmp_output
 	);
+	t_scat = timer.GetElapsedTime() - t_init;
+
+	//Fill
 	viskores::cont::Algorithm::ScanInclusive(tmp_output, output, my_maximum<T>());
+	timer.Stop();
+	t_fill = timer.GetElapsedTime() - t_scat - t_init;
+	
+	std::cout << t_init * 1e6 << ", " << t_scat * 1e6 << ", " << t_fill * 1e6 << std::endl;
 }
 
 /*
