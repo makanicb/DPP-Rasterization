@@ -257,18 +257,35 @@ void expand_int
 	 thrust::device_vector<int>::iterator end,
 	 int num)
 {
+	//Initialize timer
+	cudaEvent_t t_start, t_scat, t_fill;
+	cudaEventCreate(&t_start);
+	cudaEventCreate(&t_scat);
+	cudaEventCreate(&t_fill);
+
+	//Start timer
+	cudaEventRecord(t_start);
+
 	thrust::scatter_if
 		(thrust::counting_iterator<int>(0),
 		 thrust::counting_iterator<int>(num),
 		 map,
 		 count,
 		 start);
+	cudaEventRecord(t_scat);
 
 	thrust::inclusive_scan
 		(start,
 		 end,
 		 start,
 		 thrust::maximum<int>());
+	cudaEventRecord(t_fill);
+	
+	cudaEventSynchronize(t_fill);
+	float r_scat = 0, r_fill = 0;
+	cudaEventElapsedTime(&r_scat, t_start, t_scat);
+	cudaEventElapsedTime(&r_fill, t_scat, t_fill);
+	std::cout << r_scat * 1e3 << ", " << r_fill * 1e3 << std::endl;
 }	
 
 void index_int
