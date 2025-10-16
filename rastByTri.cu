@@ -397,10 +397,11 @@ void vexpand(viskores::cont::ArrayHandle<IndexT> &map,
 		viskores::Id num)
 {
 
-	//Set up timer
+	
+	/*//Set up timer
 	viskores::Float64 t_init, t_scat, t_fill;
 	viskores::cont::Timer timer;
-	timer.Start();
+	timer.Start();*/
 
 	//Initialize
 	//Get size of map
@@ -410,7 +411,7 @@ void vexpand(viskores::cont::ArrayHandle<IndexT> &map,
 	//Create temporary output 
 	viskores::cont::ArrayHandle<T> tmp_output;
 	tmp_output.AllocateAndFill(num, 0);
-	t_init = timer.GetElapsedTime();
+	//t_init = timer.GetElapsedTime();
 
 	//Scatter
 	viskores::cont::Invoker invoke;
@@ -422,14 +423,14 @@ void vexpand(viskores::cont::ArrayHandle<IndexT> &map,
 		counts, 
 		tmp_output
 	);
-	t_scat = timer.GetElapsedTime() - t_init;
+	//t_scat = timer.GetElapsedTime() - t_init;
 
 	//Fill
 	viskores::cont::Algorithm::ScanInclusive(tmp_output, output, my_maximum<T>());
-	timer.Stop();
-	t_fill = timer.GetElapsedTime() - t_scat - t_init;
+	//timer.Stop();
+	//t_fill = timer.GetElapsedTime() - t_scat - t_init;
 	
-	std::cout << t_init * 1e6 << ", " << t_scat * 1e6 << ", " << t_fill * 1e6 << std::endl;
+	//std::cout << t_init * 1e6 << ", " << t_scat * 1e6 << ", " << t_fill * 1e6 << std::endl;
 }
 
 /*
@@ -647,8 +648,14 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	std::cout << "write position by triangle: " << std::endl;
 	print_ArrayHandle(write_index);
 #endif
+	//start: rasterize - recond number of fragments
 
 	int fragments = write_index.ReadPortal().Get(numTri-1) + frags.ReadPortal().Get(numTri-1);
+	
+#if TIME > 1
+	//time: rasterize - record number of fragments
+	times.push_back(timer.GetElapsedTime());	
+#endif
 #if DEBUG > 1	
 	std::cout << "Number of fragments: " << fragments << std::endl;
 #endif
