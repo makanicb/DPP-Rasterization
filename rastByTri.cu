@@ -435,10 +435,6 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	//time: rasterize - record total number of fragments
 	int fragments = write_index[numTri-1] + frags[numTri-1];
 	
-#if TIME > 1
-	//time: rasterize - record total number of fragments
-	cudaEventRecord(timer[break_count++]);	
-#endif
 #if DEBUG > 1	
 	std::cout << "Number of fragments: " << fragments << std::endl;
 #endif
