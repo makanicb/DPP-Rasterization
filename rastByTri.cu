@@ -650,7 +650,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 #endif
 	//start: rasterize - recond number of fragments
 
-	int fragments = write_index.ReadPortal().Get(numTri-1) + frags.ReadPortal().Get(numTri-1);
+	int fragments = viskores::cont::Algorithm::Reduce(frags, 0);
 	
 #if TIME > 1
 	//time: rasterize - record number of fragments
@@ -723,7 +723,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	print_ArrayHandle(row_off);
 #endif
 
-	int num_rows = row_off.ReadPortal().Get(numTri-1) + rows.ReadPortal().Get(numTri-1);
+	int num_rows = viskores::cont::Algorithm::Reduce(rows, 0);
 
 	//start: rasterize - associate rows to triangles
 
