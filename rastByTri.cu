@@ -638,7 +638,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 #endif
 	//start: rasterize - get write positions by triangle
 	viskores::cont::ArrayHandle<viskores::Id> write_index;
-	viskores::cont::Algorithm::ScanExclusive(viskores::cont::make_ArrayHandleCast<viskores::Id>(frags),
+	int fragments = viskores::cont::Algorithm::ScanExclusive(viskores::cont::make_ArrayHandleCast<viskores::Id>(frags),
 			write_index);
 #if TIME > 1
 	//time: rasterize - retrieved write positions
@@ -647,14 +647,6 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 #if DEBUG > 1
 	std::cout << "write position by triangle: " << std::endl;
 	print_ArrayHandle(write_index);
-#endif
-	//start: rasterize - recond number of fragments
-
-	int fragments = viskores::cont::Algorithm::Reduce(frags, 0);
-	
-#if TIME > 1
-	//time: rasterize - record number of fragments
-	times.push_back(timer.GetElapsedTime());	
 #endif
 #if DEBUG > 1	
 	std::cout << "Number of fragments: " << fragments << std::endl;
@@ -713,7 +705,7 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 #endif
 	//start: rasterize - get row offsets in triangles
 	viskores::cont::ArrayHandle<viskores::Id> row_off;
-	viskores::cont::Algorithm::ScanExclusive(viskores::cont::make_ArrayHandleCast<viskores::Id>(rows), row_off);
+	int num_rows = viskores::cont::Algorithm::ScanExclusive(viskores::cont::make_ArrayHandleCast<viskores::Id>(rows), row_off);
 #if TIME > 1
 	//time: rasterize - get row offsets in triangles
 	times.push_back(timer.GetElapsedTime());	
@@ -722,9 +714,6 @@ void RasterizeTriangles(viskores::cont::ArrayHandle<viskores::Vec3f> &p1,
 	std::cout << "What is the row offset of each triangle?" << std::endl;
 	print_ArrayHandle(row_off);
 #endif
-
-	int num_rows = viskores::cont::Algorithm::Reduce(rows, 0);
-
 	//start: rasterize - associate rows to triangles
 
 	//Initialize ArrayHandles
