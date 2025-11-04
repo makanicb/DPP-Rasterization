@@ -25,6 +25,10 @@
 #define DEBUG 0
 #endif
 
+#ifndef CUDA_ON
+#define CUDA_ON 0
+#endif
+
 void parseTriPair(const std::string &str, float &v1, float &v2, float &v3)
 {
 	//std::cout << "parsing " << str << std::endl;
@@ -295,8 +299,10 @@ int main(int argc, char **argv)
 {
 	//initialize viskores
 	viskores::cont::Initialize(argc, argv, viskores::cont::InitializeOptions::AddHelp);
+#if CUDA_ON > 0
 	viskores::cont::cuda::internal::CudaAllocator::UsingManagedMemory();
         viskores::cont::cuda::internal::CudaAllocator::ForceManagedMemoryOff();
+#endif	
 
 	int scale = 1;
 	int subdivisions = 0;
