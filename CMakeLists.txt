@@ -23,7 +23,7 @@ if(CUDA_MODE)
 
 	if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
 		set(CUDA_TARGET_ARCHITECTURE "80" CACHE STRING "CUDA Architecture")
-		set(CMAKE_CUDA_ARCHITECTURES CUDA_TARGET_ARCHITECTURE)
+		set(CMAKE_CUDA_ARCHITECTURES ${CUDA_TARGET_ARCHITECTURE})
 	endif()
 endif()
 
@@ -42,7 +42,7 @@ add_executable(rast ${SRC_FILES})
 
 # Compile with CUDA if relevant
 if(CUDA_MODE)
-	set_source_file_properties(${SRC_FILES} PROPERTIES LANGUAGE CUDA)
+	set_source_files_properties(${SRC_FILES} PROPERTIES LANGUAGE CUDA)
 endif()
 
 # Include local libraries
