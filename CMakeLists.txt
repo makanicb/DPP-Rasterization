@@ -9,13 +9,13 @@ option(DEBUG_MODE "Enable debug mode" ON)
 set(OPTIMIZATION_LEVEL "O0" CACHE STRING "Optimization level (O0, O1, O2, O3)")
 option(ENABLE_WARNINGS "Enable compiler warnings" ON)
 set(DEBUG_LEVEL "1" CACHE STRING "Debug Level (0-4)")
-set(TIME_LEVEL "1" CACHE STRING "Time Level (0-2)")
+set(TIME_LEVEL "1" CACHE STRING "Time Level (0-3)")
 option(CUDA_MODE "Compile for CUDA" OFF)
 
 # Set optimization level options
 set_property(CACHE OPTIMIZATION_LEVEL PROPERTY STRINGS "O0" "O1" "O2" "O3")
 set_property(CACHE DEBUG_LEVEL PROPERTY STRINGS "0" "1" "2" "3" "4")
-set_property(CACHE TIME_LEVEL PROPERTY STRINGS "0" "1" "2")
+set_property(CACHE TIME_LEVEL PROPERTY STRINGS "0" "1" "2" "3")
 
 # Turn on CUDA
 if(CUDA_MODE)
@@ -28,6 +28,7 @@ if(CUDA_MODE)
 endif()
 
 #list(APPEND CMAKE_PREFIX_PATH "/global/common/software/m2956/viskores") # Computer dependent. Set for your system.
+list(APPEND CMAKE_PREFIX_PATH "/home/makanib/cdux/viskores-install") # Computer dependent. Set for your system.
 find_package(Viskores REQUIRED)
 
 # find_package(Thrust REQUIRED CONFIG)
