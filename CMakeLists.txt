@@ -11,6 +11,7 @@ option(ENABLE_WARNINGS "Enable compiler warnings" ON)
 set(DEBUG_LEVEL "1" CACHE STRING "Debug Level (0-4)")
 set(TIME_LEVEL "1" CACHE STRING "Time Level (0-3)")
 option(CUDA_MODE "Compile for CUDA" OFF)
+option(USE_MG_MEM "Use managed memory" OFF)
 
 # Set optimization level options
 set_property(CACHE OPTIMIZATION_LEVEL PROPERTY STRINGS "O0" "O1" "O2" "O3")
@@ -99,7 +100,7 @@ endif()
 
 # Define DEBUG level
 if(DEBUG_MODE)
-	target_compile_definitions(rast PRIVATE DEBUG=${DEBUG_LEVEL} TIME=${TIME_LEVEL} CUDA_ON=${CUDA_ON})
+	target_compile_definitions(rast PRIVATE DEBUG=${DEBUG_LEVEL} TIME=${TIME_LEVEL} CUDA_ON=$<BOOL:${CUDA_ON}> MG_MEM=$<BOOL:${USE_MG_MEM}>)
 else()
-	target_compile_definitions(rast PRIVATE TIME=${TIME_LEVEL} CUDA_ON=${CUDA_ON})
+	target_compile_definitions(rast PRIVATE TIME=${TIME_LEVEL} CUDA_ON=$<BOOL:${CUDA_ON}> MG_MEM=$<BOOL:${USE_MG_MEM}>)
 endif()
