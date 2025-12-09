@@ -7,7 +7,7 @@ pnmtopng
 *.stl
 data/
 rast
-start_int_gpu.sh
+start_int_*.sh
 triCount
 build*/
 *.nsys-rep
