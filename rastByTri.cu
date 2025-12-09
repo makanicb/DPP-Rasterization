@@ -378,12 +378,16 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		int numTri, int width, int height, Image *final_image, bool warmup)
 {
 #if TIME > 0 
+	
 	//Get number of breakpoints
-#if TIME > 1
+#if TIME > 2 
 #define BREAKS 24
-#else
+#elif TIME > 1
 #define BREAKS 5
+#else
+#define BREAKS 2
 #endif
+
 	//Set up timing systems
 	cudaEvent_t timer[BREAKS];
 
@@ -410,7 +414,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), frags.begin())),
 			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), frags.end())),
 			 fragCount());
-#if TIME > 1 
+#if TIME > 2 
 	//time: rasterize - counted triangles
 	cudaEventRecord(timer[break_count++]);	
 #endif
@@ -423,7 +427,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::device_vector<int> write_index(numTri);
 
 	thrust::exclusive_scan(frags.begin(), frags.end(), write_index.begin());
-#if TIME > 1
+#if TIME > 2
 	//time: rasterize - retrieved write positions
 	cudaEventRecord(timer[break_count++]);	
 #endif
@@ -445,7 +449,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 
 	thrust::device_vector<int> frag_tri(fragments);
 	expand_int(write_index.begin(), frags.begin(), frag_tri.begin(), frag_tri.end(), numTri);
-#if TIME > 1
+#if TIME > 2
 	//time: rasterize - associated fragments to triangles
 	cudaEventRecord(timer[break_count++]);	
 #endif
@@ -482,7 +486,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::for_each(thrust::make_zip_iterator(thrust::make_tuple(p1.begin(), p2.begin(), p3.begin(), rows.begin())),
 			 thrust::make_zip_iterator(thrust::make_tuple(p1.end(), p2.end(), p3.end(), rows.end())),
 			 rowCount());
-#if TIME > 1
+#if TIME > 2
 	//time: rasterize - counted rows
 	cudaEventRecord(timer[break_count++]);	
 #endif
@@ -495,7 +499,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	//start: rasterize - get row offset of triangles
 	thrust::device_vector<int> row_off(numTri);
 	thrust::exclusive_scan(rows.begin(), rows.end(), row_off.begin());
-#if TIME > 1
+#if TIME > 2
 	//time: rasterize - retrieved row offset of triangles
 	cudaEventRecord(timer[break_count++]);	
 #endif
@@ -512,7 +516,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::device_vector<int> tri_ptr(num_rows);
 	
 	expand_int(row_off.begin(), rows.begin(), tri_ptr.begin(), tri_ptr.end(), numTri);
-#if TIME > 1
+#if TIME > 2
 	//time: rasterize - associated rows to triangles
 	cudaEventRecord(timer[break_count++]);	
 #endif
@@ -527,7 +531,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::device_vector<int> row_ptr(num_rows);
 
 	index_int(tri_ptr.begin(), row_off.begin(), row_ptr.begin(), num_rows);
-#if TIME > 1
+#if TIME > 2
 	//time: rasterize - indexed rows
 	cudaEventRecord(timer[break_count++]);	
 #endif
@@ -553,7 +557,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 			 row_ptr.end(),
 			 col_count.end())),
 		colCount());
-#if TIME > 1
+#if TIME > 2
 	//time: rasterize - counted columns
 	cudaEventRecord(timer[break_count++]);	
 #endif
@@ -566,7 +570,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::device_vector<int> col_off(num_rows);
 
 	thrust::exclusive_scan(col_count.begin(), col_count.end(), col_off.begin());
-#if TIME > 1
+#if TIME > 2
 	//time: rasterize - retrieved column offsets
 	cudaEventRecord(timer[break_count++]);	
 #endif
@@ -592,7 +596,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		 thrust::make_permutation_iterator(row_off.begin(), frag_tri.begin()),
 		 frag_row.begin(),
 		 thrust::minus<int>());
-#if TIME > 1
+#if TIME > 2
 	//time: rasterize - get fragment (row, column) position
 	cudaEventRecord(timer[break_count++]);	
 #endif
@@ -628,7 +632,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 
 	thrust::device_vector<thrust::tuple<char,char,char>> frag_colors(fragments);
 	thrust::gather(frag_tri.begin(), frag_tri.end(), color.begin(), frag_colors.begin());
-#if TIME > 0
+#if TIME > 1
 	//time: rasterized triangles. acquired all fragments
 	cudaEventRecord(timer[break_count++]);
 	//start: sort
@@ -646,7 +650,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::sequence(sorted_inds.begin(), sorted_inds.end());
 
 	thrust::copy(pos.begin(), pos.end(), cpos.begin());
-#if TIME > 1
+#if TIME > 2
 	//time: sort - duplicated fragments
 	cudaEventRecord(timer[break_count++]);
 #endif
@@ -663,7 +667,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	print_int_vec(sorted_inds.begin(), sorted_inds.end());
 	print_float_vec(cdepth.begin(), cdepth.end());
 #endif
-#if TIME > 0
+#if TIME > 1
 	//time: sorted fragments
 	cudaEventRecord(timer[break_count++]);
 #endif
@@ -678,7 +682,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		auto tmp_pos_end = thrust::unique_copy(cpos.begin(), cpos.end(), tmp_pos.begin());
 		unique_positions = (int)(tmp_pos_end - tmp_pos.begin());
 	}
-#if TIME > 1
+#if TIME > 2
 	//time: select - retrieved unique positions 
 	cudaEventRecord(timer[break_count++]);
 #endif
@@ -693,7 +697,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 			min_depth.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::maximum<float>());
 	thrust::reduce_by_key(cpos.begin(), cpos.end(), thrust::make_constant_iterator<int>(1), thrust::make_discard_iterator(), 
 			pos_count.begin(), thrust::equal_to<thrust::pair<int,int>>(), thrust::plus<int>());
-#if TIME > 1
+#if TIME > 2
 	//time: select - counted overlap
 	cudaEventRecord(timer[break_count++]);
 #endif
@@ -707,7 +711,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	//start: select - get offset of each unique position
 	thrust::device_vector<int> pos_start_ind(unique_positions);
 	thrust::exclusive_scan(pos_count.begin(), pos_count.end(), pos_start_ind.begin());
-#if TIME > 1
+#if TIME > 2
 	//time: select - retrieved offsets
 	cudaEventRecord(timer[break_count++]);
 #endif
@@ -718,7 +722,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	//start: select - get index of minimum depth fragment at each position
 	thrust::device_vector<int> depth_map(fragments);
 	expand_int(pos_start_ind.begin(), pos_count.begin(), depth_map.begin(), depth_map.end(), unique_positions);
-#if TIME > 1
+#if TIME > 2
 	//time: select - retrieved index of minimum depth fragments
 	cudaEventRecord(timer[break_count++]);
 #endif
@@ -729,7 +733,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	//start: get minimum depth at each position
 	thrust::device_vector<float> exp_min_depth(fragments);
 	thrust::gather(depth_map.begin(), depth_map.end(), min_depth.begin(), exp_min_depth.begin());
-#if TIME > 1
+#if TIME > 2
 	//time: select - retrieved minimum depths
 	cudaEventRecord(timer[break_count++]);
 #endif
@@ -773,7 +777,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 		std::cout << write_frag[i] << " ";
 	std::cout << std::endl;
 #endif
-#if TIME > 0
+#if TIME > 1
 	//time: got visible fragments
 	cudaEventRecord(timer[break_count++]);
 #endif
@@ -785,7 +789,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 
 	thrust::device_vector<int> rowMajorPos(fragments);
 	thrust::transform(cpos.begin(), cpos.end(), rowMajorPos.begin(), toRowMajor(width));
-#if TIME > 1 
+#if TIME > 2
 	//time: write - retrieved buffer positions
 	cudaEventRecord(timer[break_count++]);
 #endif
@@ -800,7 +804,7 @@ void RasterizeTriangles(thrust::device_vector<thrust::tuple<float, float, float>
 	thrust::fill(img.begin(), img.end(), thrust::make_tuple<unsigned char,unsigned char,unsigned char>(255,255,255));
 	thrust::scatter_if(cfrag_colors.begin(), cfrag_colors.end(), rowMajorPos.begin(), write_frag.begin(), img.begin());
 
-#if TIME > 1 
+#if TIME > 2
 	//time: write - scattered fragments
 	cudaEventRecord(timer[break_count++]);
 #endif
