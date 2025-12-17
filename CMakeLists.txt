@@ -28,7 +28,7 @@ if(CUDA_MODE)
 	endif()
 endif()
 
-#list(APPEND CMAKE_PREFIX_PATH "/global/common/software/m2956/viskores") # Computer dependent. Set for your system.
+#list(APPEND CMAKE_PREFIX_PATH "/global/common/software/m2956/viskores-git") # Computer dependent. Set for your system.
 list(APPEND CMAKE_PREFIX_PATH "/home/makanib/cdux/viskores-install") # Computer dependent. Set for your system.
 find_package(Viskores REQUIRED)
 
