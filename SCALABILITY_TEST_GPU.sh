@@ -11,7 +11,7 @@ echo -e "Scale, Rasterize, Sort, Select, Write"
 
 for i in 1 2 4 8 16
 do
-	echo -n -e "$i\t$mult"
+	echo -n -e "$i"
 	build_thrust/rast $fin $fout $i
 done
 
