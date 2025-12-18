@@ -7,8 +7,6 @@ fout="img/${base}.pnm"
 echo $fin
 echo $fout
 
-./triCount $fin
-
 echo -e "Scale, Rasterize, Sort, Select, Write"
 
 for i in 1 2 4 8 16
