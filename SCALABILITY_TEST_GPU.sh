@@ -9,7 +9,7 @@ echo $fout
 
 echo -e "Scale, Rasterize, Sort, Select, Write"
 
-for i in 1 2 4 8 16
+for i in 1 2 4 8 16 32 64 128
 do
 	echo -n -e "$i"
 	build_thrust/rast $fin $fout $i

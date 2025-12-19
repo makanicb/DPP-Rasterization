@@ -9,14 +9,13 @@ echo $fout
 
 ./triCount $fin
 
-echo -e "Scale\tTriangle Multiplier\tRasterize\tSort\tSelect\tWrite"
+echo -e "Scale, Subdivisions, Runtime"
 
-for i in 1 2 4 8 16
+for i in 1 2 4 8 16 32 64 128
 do
-	for j in 0 1 2 3 4
+	for j in 0 1 2 3 4 5 6
 	do
-		let mult=4**$j
-		echo -n -e "$i, $mult"
-		./rast $fin $fout $i $j
+		echo -n -e "$i, $j"
+		build_thrust/rast $fin $fout $i $j
 	done
 done
