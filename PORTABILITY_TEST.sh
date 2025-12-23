@@ -8,5 +8,5 @@ for fin in "$models"/*.stl; do
         base=$(basename $fin .stl)
         fout="$img/${base}.pnm"
         echo -n $base
-        build/rast --viskores-device=$dev $fin $fout 10
+        build_viskores/rast --viskores-device=$dev $fin $fout 10
 done
