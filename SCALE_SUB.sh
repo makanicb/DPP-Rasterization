@@ -9,9 +9,9 @@ echo $fout
 
 #./triCount $fin
 
-echo "Scale, Subdivisions, Rasterize, Runtime"
+echo "Scale, Subdivisions, Runtime"
 
-for i in 1 2 4 8 16 32 64 128
+for i in 128
 do
 	for j in 0 1 2 3 4 5 6
 	do
