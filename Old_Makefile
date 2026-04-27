@@ -10,17 +10,24 @@
 #main.o : main.cpp 
 #	g++ -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP -c -o $@ $<
 
-source = $(wildcard *.cpp)
+#CC = gcc
+CC = /packages/cuda/11.5.1/bin/nvcc 
+source = $(wildcard *.cu)
 objects = $(addsuffix .o, $(basename $(source)))
-flags = -g -W -Wall -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP -DDEBUG=0 
-#flags = -g -W -Wall -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP -DDEBUG=0 -I/packages/cuda/9.2/include/
+#flags = --x cu -O3 -W -Wall -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA -DDEBUG=1
+#the good flags
+flags = -g -G -Xcompiler -fopenmp -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_OMP -DDEBUG=0
+#flags = -Xptxas -O3 -O3 -DTHRUST_DEVICE_SYSTEM=THRUST_DEVICE_SYSTEM_CUDA -DDEBUG=0
 target = rast
 
 $(target) : $(objects)
-	g++ $(flags) -o $(target) $(objects)
+	$(CC) $(flags) -o $(target) $(objects)
 
-%.o : %.cpp
-	g++ $(flags) -c $< -o $@
+%.o : %.cu
+	$(CC) $(flags) -c $< -o $@
+
+triCount: getTriangleCount.c
+	gcc $< -o $@
 
 clean :
 	rm $(target) $(wildcard *.o)

@@ -4,3 +4,11 @@ pnmtopng
 *.png
 *.o
 *.tri
+*.stl
+data/
+rast
+start_int_*.sh
+triCount
+build*/
+*.nsys-rep
+*.sqlite
